@@ -20,6 +20,7 @@ import type {
   Story,
   Theme,
   User,
+  View,
   WalletTx,
 } from "./types";
 import {
@@ -97,10 +98,16 @@ interface State {
   followingIds: string[];
   isAuthed: boolean;
   settings: Settings;
+  view: View;
+  profileUserId: string | null;
 
   user: (id: string) => User;
   me: () => User;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+  navigate: (view: View) => void;
+  openProfile: (userId: string) => void;
+  followerCount: (userId: string) => number;
+  followingCount: (userId: string) => number;
 
   login: (userId: string) => void;
   register: (data: {
@@ -198,12 +205,32 @@ export const useStore = create<State>()(
       followingIds: [],
       isAuthed: false,
       settings: DEFAULT_SETTINGS,
+      view: "feed",
+      profileUserId: null,
 
       user: (id) => get().users.find((u) => u.id === id) ?? ME,
       me: () => get().user(get().currentUserId),
 
       setSetting: (key, value) =>
         set((s) => ({ settings: { ...s.settings, [key]: value } })),
+
+      navigate: (view) => set({ view, profileUserId: null }),
+
+      openProfile: (userId) =>
+        set((s) => ({ view: "profile", profileUserId: userId === s.currentUserId ? null : userId })),
+
+      followerCount: (userId) => {
+        const base = get().user(userId).followers ?? 0;
+        // jika kamu mengikuti user ini, +1 pengikut
+        return base + (get().followingIds.includes(userId) ? 1 : 0);
+      },
+
+      followingCount: (userId) => {
+        // untuk diri sendiri: jumlah nyata yang kamu ikuti + baseline
+        if (userId === get().currentUserId)
+          return (get().user(userId).following ?? 0) + get().followingIds.length;
+        return get().user(userId).following ?? 0;
+      },
 
       login: (userId) => set({ currentUserId: userId, isAuthed: true }),
 

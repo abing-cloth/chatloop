@@ -22,6 +22,7 @@ export function PostCard({ post }: { post: Post }) {
 
   const toggleSave = useStore((s) => s.toggleSave);
   const saved = useStore((s) => s.savedPostIds.includes(post.id));
+  const openProfile = useStore((s) => s.openProfile);
 
   const author = user(post.userId);
   const liked = post.likedBy.includes(me);
@@ -40,12 +41,14 @@ export function PostCard({ post }: { post: Post }) {
     <article className="animate-fade overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       {/* header */}
       <div className="flex items-center gap-3 p-4">
-        <img src={author.avatar} alt={author.name} className="h-10 w-10 rounded-full object-cover" />
+        <button onClick={() => openProfile(author.id)}>
+          <img src={author.avatar} alt={author.name} className="h-10 w-10 rounded-full object-cover" />
+        </button>
         <div className="flex-1">
-          <p className="flex items-center gap-1 text-sm font-semibold leading-tight">
+          <button onClick={() => openProfile(author.id)} className="flex items-center gap-1 text-sm font-semibold leading-tight hover:underline">
             {author.name}
             {author.verified && <VerifiedBadge size={15} />}
-          </p>
+          </button>
           <p className="text-xs text-zinc-500">
             @{author.username} · {timeAgo(post.createdAt)}
           </p>

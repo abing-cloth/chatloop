@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RightBar } from "./components/RightBar";
-import { Sidebar, type View } from "./components/Sidebar";
+import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { MobileNav } from "./components/MobileNav";
 import { Feed } from "./pages/Feed";
@@ -23,10 +23,11 @@ import { CartDrawer } from "./components/CartDrawer";
 import { useStore } from "./lib/store";
 
 export default function App() {
-  const [view, setView] = useState<View>("feed");
   const [showSplash, setShowSplash] = useState(true);
   const [unlocked, setUnlocked] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
+  const view = useStore((s) => s.view);
+  const setView = useStore((s) => s.navigate);
   const theme = useStore((s) => s.theme);
   const isAuthed = useStore((s) => s.isAuthed);
   const settings = useStore((s) => s.settings);

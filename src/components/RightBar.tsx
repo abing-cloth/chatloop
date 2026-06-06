@@ -4,6 +4,7 @@ export function RightBar() {
   const users = useStore((s) => s.users).filter((u) => u.id !== "me");
   const following = useStore((s) => s.followingIds);
   const toggleFollow = useStore((s) => s.toggleFollow);
+  const openProfile = useStore((s) => s.openProfile);
 
   return (
     <aside className="sticky top-20 hidden h-fit w-72 shrink-0 xl:block">
@@ -17,11 +18,13 @@ export function RightBar() {
             const isFollowing = following.includes(u.id);
             return (
               <div key={u.id} className="flex items-center gap-3">
-                <img src={u.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{u.name}</p>
+                <button onClick={() => openProfile(u.id)}>
+                  <img src={u.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                </button>
+                <button onClick={() => openProfile(u.id)} className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-sm font-semibold hover:underline">{u.name}</p>
                   <p className="truncate text-xs text-zinc-500">@{u.username}</p>
-                </div>
+                </button>
                 <button
                   onClick={() => toggleFollow(u.id)}
                   className={

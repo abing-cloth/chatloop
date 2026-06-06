@@ -7,7 +7,24 @@ export interface User {
   verified?: boolean;
   phone?: string;
   email?: string;
+  followers?: number; // jumlah pengikut (baseline)
+  following?: number; // jumlah yang diikuti (baseline)
 }
+
+export type View =
+  | "feed"
+  | "explore"
+  | "reels"
+  | "live"
+  | "shop"
+  | "orders"
+  | "groups"
+  | "wallet"
+  | "messages"
+  | "notifications"
+  | "saved"
+  | "profile"
+  | "settings";
 
 export interface Comment {
   id: string;

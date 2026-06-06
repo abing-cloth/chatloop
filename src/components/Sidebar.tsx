@@ -19,21 +19,8 @@ import {
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import { InstallButton } from "./InstallButton";
-
-export type View =
-  | "feed"
-  | "explore"
-  | "reels"
-  | "live"
-  | "shop"
-  | "orders"
-  | "groups"
-  | "wallet"
-  | "messages"
-  | "notifications"
-  | "saved"
-  | "profile"
-  | "settings";
+import type { View } from "../lib/types";
+export type { View } from "../lib/types";
 
 const NAV = [
   { id: "feed", label: "Beranda", icon: Home },

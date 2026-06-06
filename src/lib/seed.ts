@@ -25,15 +25,17 @@ export const ME: User = {
   avatar: avatar("kamu-loop"),
   bio: "Halo! Aku pengguna baru di ChatLoop 🔄",
   verified: true,
+  followers: 128,
+  following: 180,
 };
 
 export const SEED_USERS: User[] = [
   ME,
-  { id: "u1", name: "Sari Dewi", username: "saridewi", avatar: avatar("sari"), bio: "Pecinta kopi & senja ☕🌇", verified: true },
-  { id: "u2", name: "Budi Santoso", username: "budisantoso", avatar: avatar("budi"), bio: "Fotografi jalanan 📷", verified: true },
-  { id: "u3", name: "Maya Putri", username: "mayaputri", avatar: avatar("maya"), bio: "Travel | Food | Vibes ✈️", verified: true },
-  { id: "u4", name: "Rizky Pratama", username: "rizkypratama", avatar: avatar("rizky"), bio: "Developer & gamer 🎮", verified: true },
-  { id: "u5", name: "Indah Lestari", username: "indahlestari", avatar: avatar("indah"), bio: "Yoga every morning 🧘‍♀️", verified: true },
+  { id: "u1", name: "Sari Dewi", username: "saridewi", avatar: avatar("sari"), bio: "Pecinta kopi & senja ☕🌇", verified: true, followers: 12840, following: 312 },
+  { id: "u2", name: "Budi Santoso", username: "budisantoso", avatar: avatar("budi"), bio: "Fotografi jalanan 📷", verified: true, followers: 8420, following: 540 },
+  { id: "u3", name: "Maya Putri", username: "mayaputri", avatar: avatar("maya"), bio: "Travel | Food | Vibes ✈️", verified: true, followers: 53120, following: 489 },
+  { id: "u4", name: "Rizky Pratama", username: "rizkypratama", avatar: avatar("rizky"), bio: "Developer & gamer 🎮", verified: true, followers: 6310, following: 275 },
+  { id: "u5", name: "Indah Lestari", username: "indahlestari", avatar: avatar("indah"), bio: "Yoga every morning 🧘‍♀️", verified: true, followers: 9340, following: 198 },
 ];
 
 const now = Date.now();
