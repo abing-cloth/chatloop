@@ -47,6 +47,11 @@ export default function App() {
     document.documentElement.dataset.accent = settings.accent;
   }, [settings.accent]);
 
+  useEffect(() => {
+    const px = settings.fontScale === "kecil" ? "14px" : settings.fontScale === "besar" ? "18px" : "16px";
+    document.documentElement.style.fontSize = px;
+  }, [settings.fontScale]);
+
   // saat app pertama dibuka & sudah login dengan kunci aktif → minta buka kunci
   useEffect(() => {
     const st = useStore.getState();

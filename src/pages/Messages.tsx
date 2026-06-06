@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
+import { EmojiPicker } from "../components/EmojiPicker";
 
 export function Messages() {
   const conversations = useStore((s) => s.conversations);
@@ -127,17 +128,20 @@ export function Messages() {
           </div>
 
           <div className="flex items-center gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800">
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Tulis pesan..."
-              className="flex-1 rounded-full bg-zinc-100 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-fuchsia-300 dark:bg-zinc-800"
-            />
+            <div className="flex flex-1 items-center gap-1 rounded-full bg-zinc-100 px-3 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800">
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+                placeholder="Tulis pesan..."
+                className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none"
+              />
+              <EmojiPicker onPick={(e) => setText((t) => t + e)} />
+            </div>
             <button
               onClick={send}
               disabled={!text.trim()}
-              className="grid h-10 w-10 place-items-center rounded-full bg-fuchsia-600 text-white hover:bg-fuchsia-700 disabled:opacity-40"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fuchsia-600 text-white hover:bg-fuchsia-700 disabled:opacity-40"
             >
               <Send size={17} />
             </button>

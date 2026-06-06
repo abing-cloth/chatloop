@@ -83,7 +83,7 @@ export function Settings() {
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-5">
-      <h2 className="px-1 text-lg font-bold">Pengaturan</h2>
+      <h2 className="px-1 text-lg font-bold">{tr("set.title")}</h2>
 
       <Section icon={<Moon size={18} />} title={tr("set.appearance")}>
         <Row
@@ -132,10 +132,28 @@ export function Settings() {
             ))}
           </div>
         </div>
+        <div className="px-1 py-2">
+          <p className="text-sm font-medium">{tr("set.fontSize")}</p>
+          <div className="mt-2 flex gap-2">
+            {([["kecil", tr("set.small")], ["normal", tr("set.normal")], ["besar", tr("set.large")]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSetting("fontScale", key)}
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 font-semibold transition",
+                  key === "kecil" ? "text-xs" : key === "besar" ? "text-base" : "text-sm",
+                  settings.fontScale === key ? "bg-fuchsia-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <Toggle k="dataSaver" label={tr("set.dataSaver")} desc={tr("set.dataSaverDesc")} s={settings} set={setSetting} />
       </Section>
 
-      <Section icon={<BadgeCheck size={18} />} title="Kreator & Verifikasi">
+      <Section icon={<BadgeCheck size={18} />} title={tr("set.creator")}>
         <div className="flex items-center justify-between gap-3 px-1 py-2">
           <div className="flex items-center gap-2">
             <BadgeCheck size={18} className="fill-sky-500 text-white" />
@@ -149,7 +167,7 @@ export function Settings() {
         <Toggle k="creatorMode" label="Mode Kreator" desc="Akses insight & alat kreator" s={settings} set={setSetting} />
       </Section>
 
-      <Section icon={<Download size={18} />} title="Aplikasi">
+      <Section icon={<Download size={18} />} title={tr("set.app")}>
         <div className="px-1 py-1">
           <p className="mb-3 text-sm text-zinc-500">
             Pasang ChatLoop sebagai aplikasi — buka langsung dari layar utama,
@@ -175,12 +193,12 @@ export function Settings() {
         <Toggle k="notifLive" label="Teman mulai Live" desc="Saat teman memulai siaran langsung" s={settings} set={setSetting} />
       </Section>
 
-      <Section icon={<ShieldCheck size={18} />} title="Privasi">
+      <Section icon={<ShieldCheck size={18} />} title={tr("set.privacy")}>
         <Toggle k="privateAccount" label="Akun privat" desc="Hanya pengikut yang bisa melihat postinganmu" s={settings} set={setSetting} />
         <Toggle k="showActivity" label="Status aktivitas" desc="Tampilkan saat kamu sedang aktif" s={settings} set={setSetting} />
       </Section>
 
-      <Section icon={<Lock size={18} />} title="Keamanan">
+      <Section icon={<Lock size={18} />} title={tr("set.security")}>
         <Row
           label="Kunci aplikasi (PIN)"
           desc="Minta PIN saat membuka ChatLoop"
@@ -258,7 +276,7 @@ export function Settings() {
         )}
       </Section>
 
-      <Section icon={<UserCog size={18} />} title="Akun">
+      <Section icon={<UserCog size={18} />} title={tr("set.account")}>
         <div className="flex items-center gap-3 px-1 py-2">
           <img src={me.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
           <div className="min-w-0 flex-1">
@@ -282,7 +300,7 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section icon={<Info size={18} />} title="Tentang">
+      <Section icon={<Info size={18} />} title={tr("set.about")}>
         <div className="px-1 py-1 text-sm text-zinc-500">
           <p>
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">ChatLoop</span>{" "}

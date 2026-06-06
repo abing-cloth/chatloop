@@ -11,6 +11,7 @@ import {
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
 import { VerifiedBadge } from "./VerifiedBadge";
+import { EmojiPicker } from "./EmojiPicker";
 import type { Post } from "../lib/types";
 
 export function PostCard({ post }: { post: Post }) {
@@ -156,17 +157,20 @@ export function PostCard({ post }: { post: Post }) {
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <input
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendComment()}
-              placeholder="Tulis komentar..."
-              className="flex-1 rounded-full bg-white px-4 py-2 text-sm outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-fuchsia-300 dark:bg-zinc-800 dark:ring-zinc-700"
-            />
+            <div className="flex flex-1 items-center gap-1 rounded-full bg-white px-3 ring-1 ring-zinc-200 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800 dark:ring-zinc-700">
+              <input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendComment()}
+                placeholder="Tulis komentar..."
+                className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none"
+              />
+              <EmojiPicker onPick={(e) => setComment((c) => c + e)} />
+            </div>
             <button
               onClick={sendComment}
               disabled={!comment.trim()}
-              className="grid h-9 w-9 place-items-center rounded-full bg-fuchsia-600 text-white disabled:opacity-40"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fuchsia-600 text-white disabled:opacity-40"
             >
               <Send size={16} />
             </button>

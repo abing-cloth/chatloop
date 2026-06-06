@@ -61,6 +61,7 @@ export interface Settings {
   dataSaver: boolean;
   pushEnabled: boolean;
   accent: "violet" | "rose" | "blue" | "emerald" | "orange";
+  fontScale: "kecil" | "normal" | "besar";
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -80,6 +81,7 @@ const DEFAULT_SETTINGS: Settings = {
   dataSaver: false,
   pushEnabled: false,
   accent: "violet",
+  fontScale: "normal",
 };
 
 interface State {

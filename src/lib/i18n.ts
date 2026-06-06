@@ -30,6 +30,10 @@ const DICT: Record<string, { id: string; en: string }> = {
   "set.appearance": { id: "Tampilan", en: "Appearance" },
   "set.language": { id: "Bahasa", en: "Language" },
   "set.accent": { id: "Warna tema", en: "Theme color" },
+  "set.fontSize": { id: "Ukuran teks", en: "Text size" },
+  "set.small": { id: "Kecil", en: "Small" },
+  "set.normal": { id: "Normal", en: "Normal" },
+  "set.large": { id: "Besar", en: "Large" },
   // halaman & aksi umum
   "page.explore": { id: "Jelajahi", en: "Explore" },
   "page.notifications": { id: "Notifikasi", en: "Notifications" },
