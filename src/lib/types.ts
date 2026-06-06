@@ -24,6 +24,7 @@ export type View =
   | "messages"
   | "notifications"
   | "saved"
+  | "insights"
   | "profile"
   | "settings";
 

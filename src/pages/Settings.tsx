@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  BadgeCheck,
   Bell,
   Download,
   Fingerprint,
@@ -78,6 +79,20 @@ export function Settings() {
           checked={theme === "dark"}
           onChange={toggleTheme}
         />
+      </Section>
+
+      <Section icon={<BadgeCheck size={18} />} title="Kreator & Verifikasi">
+        <div className="flex items-center justify-between gap-3 px-1 py-2">
+          <div className="flex items-center gap-2">
+            <BadgeCheck size={18} className="fill-sky-500 text-white" />
+            <div>
+              <p className="text-sm font-medium">Status verifikasi</p>
+              <p className="text-xs text-zinc-500">{me.verified ? "Akun terverifikasi ✓" : "Belum terverifikasi"}</p>
+            </div>
+          </div>
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">{me.verified ? "Aktif" : "—"}</span>
+        </div>
+        <Toggle k="creatorMode" label="Mode Kreator" desc="Akses insight & alat kreator" s={settings} set={setSetting} />
       </Section>
 
       <Section icon={<Download size={18} />} title="Aplikasi">

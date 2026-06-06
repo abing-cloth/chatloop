@@ -56,6 +56,7 @@ export interface Settings {
   autoLockMinutes: number; // 0 = hanya saat dibuka
   biometricEnabled: boolean;
   biometricCredId: string | null;
+  creatorMode: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -70,6 +71,7 @@ const DEFAULT_SETTINGS: Settings = {
   autoLockMinutes: 5,
   biometricEnabled: false,
   biometricCredId: null,
+  creatorMode: false,
 };
 
 interface State {

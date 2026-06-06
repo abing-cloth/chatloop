@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, Camera, Grid3x3, ImageIcon, LogOut, MessageCircle, Pencil, Play, Settings as SettingsIcon, ShieldCheck, Store } from "lucide-react";
+import { ArrowLeft, BarChart3, Camera, Grid3x3, ImageIcon, LogOut, MessageCircle, Pencil, Play, Settings as SettingsIcon, Share2, ShieldCheck, Store } from "lucide-react";
 import { PostCard } from "../components/PostCard";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { UserListModal } from "../components/UserListModal";
+import { ShareModal } from "../components/ShareModal";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl, formatRupiah } from "../lib/utils";
 import type { View } from "../lib/types";
@@ -39,6 +40,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
   const [bio, setBio] = useState(target.bio ?? "");
   const [err, setErr] = useState("");
   const [list, setList] = useState<null | "followers" | "following">(null);
+  const [share, setShare] = useState(false);
 
   const likes = posts.reduce((n, p) => n + p.likedBy.length, 0);
   const isFollowing = following.includes(target.id);
@@ -116,6 +118,8 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
             {isSelf ? (
               <div className="flex items-center gap-2">
                 <button onClick={() => { setEditing((v) => !v); setErr(""); }} className="flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"><Pencil size={15} /> Edit</button>
+                <button onClick={() => onNavigate("insights")} title="Insight" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><BarChart3 size={16} /></button>
+                <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
                 <button onClick={() => onNavigate("settings")} title="Pengaturan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 lg:hidden dark:border-zinc-700 dark:text-zinc-300"><SettingsIcon size={15} /></button>
                 <button onClick={logout} title="Keluar" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-red-600 lg:hidden dark:border-zinc-700"><LogOut size={15} /></button>
               </div>
@@ -123,6 +127,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
               <div className="flex items-center gap-2">
                 <button onClick={() => toggleFollow(target.id)} className={cn("rounded-full px-5 py-2 text-sm font-semibold transition", isFollowing ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700")}>{isFollowing ? "Mengikuti" : "Ikuti"}</button>
                 <button onClick={() => { startChat(target.id); onNavigate("messages"); }} title="Pesan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><MessageCircle size={18} /></button>
+                <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
               </div>
             )}
           </div>
@@ -215,6 +220,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
           onClose={() => setList(null)}
         />
       )}
+      {share && <ShareModal user={target} onClose={() => setShare(false)} />}
     </div>
   );
 }
