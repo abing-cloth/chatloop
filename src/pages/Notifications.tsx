@@ -1,10 +1,10 @@
-import { Heart, MessageCircle, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, Radio, UserPlus } from "lucide-react";
 import { useStore } from "../lib/store";
 import { timeAgo } from "../lib/utils";
 
 interface Notif {
   id: string;
-  type: "like" | "comment" | "follow";
+  type: "like" | "comment" | "follow" | "live";
   userId: string;
   text: string;
   createdAt: number;
@@ -15,8 +15,24 @@ export function Notifications() {
   const me = useStore((s) => s.currentUserId);
   const user = useStore((s) => s.user);
   const following = useStore((s) => s.followingIds);
+  const lives = useStore((s) => s.liveStreams);
+  const notifLive = useStore((s) => s.settings.notifLive);
 
   const notifs: Notif[] = [];
+
+  // teman sedang Live (sesuai preferensi notifikasi)
+  if (notifLive) {
+    for (const live of lives) {
+      if (live.userId === me) continue;
+      notifs.push({
+        id: `live-${live.id}`,
+        type: "live",
+        userId: live.userId,
+        text: `sedang LIVE: ${live.title}`,
+        createdAt: Date.now(),
+      });
+    }
+  }
 
   for (const p of posts.filter((p) => p.userId === me)) {
     for (const uid of p.likedBy) {
@@ -57,6 +73,7 @@ export function Notifications() {
     like: <Heart size={16} className="fill-red-500 text-red-500" />,
     comment: <MessageCircle size={16} className="text-sky-500" />,
     follow: <UserPlus size={16} className="text-fuchsia-500" />,
+    live: <Radio size={16} className="text-red-500" />,
   };
 
   return (

@@ -57,4 +57,13 @@ export interface LiveStream {
   category: string;
 }
 
+export interface ScheduledLive {
+  id: string;
+  userId: string;
+  title: string;
+  category: string;
+  thumbnail: string;
+  startsAt: number; // epoch ms
+}
+
 export type Theme = "light" | "dark";

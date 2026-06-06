@@ -13,6 +13,31 @@ export function timeAgo(ts: number): string {
   return new Date(ts).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
+export function formatSchedule(ts: number): string {
+  const d = new Date(ts);
+  const now = new Date();
+  const time = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (sameDay(d, now)) return `Hari ini, ${time}`;
+  if (sameDay(d, tomorrow)) return `Besok, ${time}`;
+  return `${d.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}, ${time}`;
+}
+
+export function countdown(ts: number): string {
+  const diff = ts - Date.now();
+  if (diff <= 0) return "Segera";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  if (h >= 24) return `${Math.floor(h / 24)} hari lagi`;
+  if (h > 0) return `${h} jam ${m} mnt lagi`;
+  return `${m} menit lagi`;
+}
+
 export function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

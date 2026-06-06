@@ -49,6 +49,7 @@ export function Sidebar({
   const logout = useStore((s) => s.logout);
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const liveCount = useStore((s) => s.liveStreams.length);
 
   return (
     <aside className="sticky top-20 hidden h-fit w-64 shrink-0 lg:block">
@@ -68,6 +69,11 @@ export function Sidebar({
             >
               <item.icon size={22} className={active ? "text-fuchsia-600 dark:text-fuchsia-400" : ""} />
               {item.label}
+              {item.id === "live" && liveCount > 0 && (
+                <span className="ml-auto flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-live-dot" /> {liveCount}
+                </span>
+              )}
             </button>
           );
         })}

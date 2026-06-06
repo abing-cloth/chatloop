@@ -1,4 +1,4 @@
-import type { Conversation, LiveStream, Post, Story, User } from "./types";
+import type { Conversation, LiveStream, Post, ScheduledLive, Story, User } from "./types";
 
 const img = (seed: string, w = 800, h = 800) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`;
@@ -91,6 +91,13 @@ export const SEED_LIVES: LiveStream[] = [
   { id: "l3", userId: "u1", title: "Ngopi & ngobrol santai bareng ☕", thumbnail: img("live-coffee", 600, 800), viewers: 876, category: "Obrolan" },
   { id: "l4", userId: "u5", title: "Yoga pagi, yuk gerak bareng 🧘‍♀️", thumbnail: img("live-yoga", 600, 800), viewers: 654, category: "Kesehatan" },
   { id: "l5", userId: "u2", title: "Hunting foto street photography 📷", thumbnail: img("live-street", 600, 800), viewers: 432, category: "Fotografi" },
+];
+
+const day = 24 * hr;
+export const SEED_SCHEDULED: ScheduledLive[] = [
+  { id: "sc1", userId: "u1", title: "Workshop seduh kopi manual ☕", category: "Obrolan", thumbnail: img("sched-coffee", 600, 400), startsAt: now + 3 * hr },
+  { id: "sc2", userId: "u4", title: "Bedah fitur baru ChatLoop bareng 💻", category: "Teknologi", thumbnail: img("sched-tech", 600, 400), startsAt: now + 1 * day },
+  { id: "sc3", userId: "u3", title: "Live trip ke Raja Ampat 🐠", category: "Travel", thumbnail: img("sched-travel", 600, 400), startsAt: now + 2 * day + 5 * hr },
 ];
 
 export const SEED_CONVERSATIONS: Conversation[] = [

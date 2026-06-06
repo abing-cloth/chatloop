@@ -1,11 +1,21 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Comment, Conversation, LiveStream, Post, Story, Theme, User } from "./types";
+import type {
+  Comment,
+  Conversation,
+  LiveStream,
+  Post,
+  ScheduledLive,
+  Story,
+  Theme,
+  User,
+} from "./types";
 import {
   ME,
   SEED_CONVERSATIONS,
   SEED_LIVES,
   SEED_POSTS,
+  SEED_SCHEDULED,
   SEED_STORIES,
   SEED_USERS,
 } from "./seed";
@@ -18,7 +28,14 @@ export interface Settings {
   notifLikes: boolean;
   notifComments: boolean;
   notifFollows: boolean;
+  notifLive: boolean;
   showActivity: boolean;
+  // keamanan
+  appLockEnabled: boolean;
+  pin: string | null;
+  autoLockMinutes: number; // 0 = hanya saat dibuka
+  biometricEnabled: boolean;
+  biometricCredId: string | null;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -26,7 +43,13 @@ const DEFAULT_SETTINGS: Settings = {
   notifLikes: true,
   notifComments: true,
   notifFollows: true,
+  notifLive: true,
   showActivity: true,
+  appLockEnabled: false,
+  pin: null,
+  autoLockMinutes: 5,
+  biometricEnabled: false,
+  biometricCredId: null,
 };
 
 interface State {
@@ -36,6 +59,8 @@ interface State {
   stories: Story[];
   conversations: Conversation[];
   liveStreams: LiveStream[];
+  scheduledLives: ScheduledLive[];
+  reminderIds: string[];
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
@@ -60,6 +85,7 @@ interface State {
   sendMessage: (userId: string, text: string) => void;
   toggleSave: (postId: string) => void;
   toggleFollow: (userId: string) => void;
+  toggleReminder: (scheduledId: string) => void;
 
   addPost: (text: string, image?: string) => void;
   deletePost: (id: string) => void;
@@ -80,6 +106,8 @@ export const useStore = create<State>()(
       stories: SEED_STORIES,
       conversations: SEED_CONVERSATIONS,
       liveStreams: SEED_LIVES,
+      scheduledLives: SEED_SCHEDULED,
+      reminderIds: [],
       theme: "light",
       savedPostIds: [],
       followingIds: [],
@@ -139,6 +167,13 @@ export const useStore = create<State>()(
           followingIds: s.followingIds.includes(userId)
             ? s.followingIds.filter((id) => id !== userId)
             : [userId, ...s.followingIds],
+        })),
+
+      toggleReminder: (scheduledId) =>
+        set((s) => ({
+          reminderIds: s.reminderIds.includes(scheduledId)
+            ? s.reminderIds.filter((id) => id !== scheduledId)
+            : [scheduledId, ...s.reminderIds],
         })),
 
       sendMessage: (userId, text) =>
@@ -229,12 +264,25 @@ export const useStore = create<State>()(
           stories: SEED_STORIES,
           conversations: SEED_CONVERSATIONS,
           liveStreams: SEED_LIVES,
+          scheduledLives: SEED_SCHEDULED,
+          reminderIds: [],
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],
           isAuthed: true,
         })),
     }),
-    { name: "loop-store-v1" }
+    {
+      name: "loop-store-v1",
+      // pastikan field baru (mis. pengaturan keamanan) tetap ada untuk data lama
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<State>;
+        return {
+          ...current,
+          ...p,
+          settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
+        };
+      },
+    }
   )
 );

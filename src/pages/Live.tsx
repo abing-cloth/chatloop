@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Eye, Radio, Video, X } from "lucide-react";
+import { Bell, BellRing, CalendarClock, Eye, Radio, Video, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { LiveRoom } from "../components/LiveRoom";
-import { cn } from "../lib/utils";
+import { cn, countdown, formatSchedule } from "../lib/utils";
 import type { LiveStream } from "../lib/types";
 
 interface HostConfig {
@@ -12,6 +12,9 @@ interface HostConfig {
 
 export function Live() {
   const lives = useStore((s) => s.liveStreams);
+  const scheduled = useStore((s) => s.scheduledLives);
+  const reminderIds = useStore((s) => s.reminderIds);
+  const toggleReminder = useStore((s) => s.toggleReminder);
   const user = useStore((s) => s.user);
 
   const categories = ["Semua", ...Array.from(new Set(lives.map((l) => l.category)))];
@@ -103,6 +106,51 @@ export function Live() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* jadwal siaran mendatang */}
+      {scheduled.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <h3 className="flex items-center gap-2 px-1 text-base font-bold">
+            <CalendarClock size={18} className="text-fuchsia-600 dark:text-fuchsia-400" /> Akan Datang
+          </h3>
+          {[...scheduled]
+            .sort((a, b) => a.startsAt - b.startsAt)
+            .map((sc) => {
+              const u = user(sc.userId);
+              const reminded = reminderIds.includes(sc.id);
+              return (
+                <div
+                  key={sc.id}
+                  className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <img src={sc.thumbnail} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <img src={u.avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
+                      <span className="truncate text-xs text-zinc-500">{u.name} · {sc.category}</span>
+                    </div>
+                    <p className="line-clamp-1 text-sm font-semibold">{sc.title}</p>
+                    <p className="mt-0.5 text-xs text-fuchsia-600 dark:text-fuchsia-400">
+                      {formatSchedule(sc.startsAt)} · {countdown(sc.startsAt)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleReminder(sc.id)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition",
+                      reminded
+                        ? "bg-fuchsia-600 text-white"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                    )}
+                  >
+                    {reminded ? <BellRing size={14} /> : <Bell size={14} />}
+                    {reminded ? "Diingatkan" : "Ingatkan"}
+                  </button>
+                </div>
+              );
+            })}
         </div>
       )}
 
