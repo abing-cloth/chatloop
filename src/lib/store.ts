@@ -4,29 +4,38 @@ import type {
   CartItem,
   Comment,
   Conversation,
+  Group,
+  GroupPost,
   LiveStream,
   Order,
   OrderStatus,
   PaymentMethod,
   Post,
   Product,
+  Reel,
   Review,
   ScheduledLive,
   ShippingAddress,
   Story,
   Theme,
   User,
+  WalletTx,
 } from "./types";
 import {
   ME,
   SEED_CONVERSATIONS,
+  SEED_GROUP_POSTS,
+  SEED_GROUPS,
   SEED_LIVES,
   SEED_POSTS,
   SEED_PRODUCTS,
+  SEED_REELS,
   SEED_REVIEWS,
   SEED_SCHEDULED,
   SEED_STORIES,
   SEED_USERS,
+  SEED_WALLET_BALANCE,
+  SEED_WALLET_TX,
 } from "./seed";
 
 let counter = 0;
@@ -74,6 +83,12 @@ interface State {
   cart: CartItem[];
   orders: Order[];
   reviews: Review[];
+  reels: Reel[];
+  groups: Group[];
+  joinedGroupIds: string[];
+  groupPosts: GroupPost[];
+  walletBalance: number;
+  walletTx: WalletTx[];
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
@@ -123,6 +138,18 @@ interface State {
   addReview: (data: { productId: string; rating: number; text: string }) => void;
   productRating: (productId: string) => { avg: number; count: number };
 
+  // reels
+  toggleReelLike: (reelId: string) => void;
+  addReel: (data: { video: string; caption: string; music?: string }) => void;
+
+  // grup
+  toggleJoinGroup: (groupId: string) => void;
+  addGroupPost: (groupId: string, text: string) => void;
+
+  // dompet
+  topUp: (amount: number) => void;
+  withdraw: (amount: number) => boolean;
+
   addPost: (text: string, image?: string) => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
@@ -148,6 +175,12 @@ export const useStore = create<State>()(
       cart: [],
       orders: [],
       reviews: SEED_REVIEWS,
+      reels: SEED_REELS,
+      groups: SEED_GROUPS,
+      joinedGroupIds: [],
+      groupPosts: SEED_GROUP_POSTS,
+      walletBalance: SEED_WALLET_BALANCE,
+      walletTx: SEED_WALLET_TX,
       activeChatUserId: null,
       theme: "light",
       savedPostIds: [],
@@ -277,6 +310,7 @@ export const useStore = create<State>()(
             .filter((x): x is NonNullable<typeof x> => Boolean(x));
           if (items.length === 0) return {};
           const total = items.reduce((n, it) => n + it.price * it.qty, 0);
+          if (payment === "saldo" && s.walletBalance < total) return {};
           const order: Order = {
             id: uid("ord"),
             items,
@@ -286,7 +320,18 @@ export const useStore = create<State>()(
             status: "dikemas",
             payment,
           };
-          return { orders: [order, ...s.orders], cart: [] };
+          const base = { orders: [order, ...s.orders], cart: [] };
+          if (payment === "saldo") {
+            return {
+              ...base,
+              walletBalance: s.walletBalance - total,
+              walletTx: [
+                { id: uid("wt"), type: "belanja" as const, amount: -total, note: `Belanja ${items.length} item`, createdAt: Date.now() },
+                ...s.walletTx,
+              ],
+            };
+          }
+          return base;
         }),
 
       updateOrderStatus: (orderId, status) =>
@@ -314,6 +359,85 @@ export const useStore = create<State>()(
         if (rs.length === 0) return { avg: 0, count: 0 };
         const avg = rs.reduce((n, r) => n + r.rating, 0) / rs.length;
         return { avg, count: rs.length };
+      },
+
+      toggleReelLike: (reelId) =>
+        set((s) => ({
+          reels: s.reels.map((r) => {
+            if (r.id !== reelId) return r;
+            const liked = r.likedBy.includes(s.currentUserId);
+            return {
+              ...r,
+              likedBy: liked
+                ? r.likedBy.filter((id) => id !== s.currentUserId)
+                : [...r.likedBy, s.currentUserId],
+            };
+          }),
+        })),
+
+      addReel: ({ video, caption, music }) =>
+        set((s) => ({
+          reels: [
+            {
+              id: uid("re"),
+              userId: s.currentUserId,
+              video,
+              caption: caption.trim(),
+              music: music?.trim() || "Suara asli",
+              likedBy: [],
+              comments: 0,
+              createdAt: Date.now(),
+            },
+            ...s.reels,
+          ],
+        })),
+
+      toggleJoinGroup: (groupId) =>
+        set((s) => {
+          const joined = s.joinedGroupIds.includes(groupId);
+          return {
+            joinedGroupIds: joined
+              ? s.joinedGroupIds.filter((id) => id !== groupId)
+              : [groupId, ...s.joinedGroupIds],
+            groups: s.groups.map((g) =>
+              g.id === groupId ? { ...g, members: g.members + (joined ? -1 : 1) } : g
+            ),
+          };
+        }),
+
+      addGroupPost: (groupId, text) =>
+        set((s) => ({
+          groupPosts: [
+            {
+              id: uid("gp"),
+              groupId,
+              userId: s.currentUserId,
+              text: text.trim(),
+              createdAt: Date.now(),
+            },
+            ...s.groupPosts,
+          ],
+        })),
+
+      topUp: (amount) =>
+        set((s) => ({
+          walletBalance: s.walletBalance + amount,
+          walletTx: [
+            { id: uid("wt"), type: "topup", amount, note: "Top up saldo", createdAt: Date.now() },
+            ...s.walletTx,
+          ],
+        })),
+
+      withdraw: (amount) => {
+        if (amount <= 0 || amount > get().walletBalance) return false;
+        set((s) => ({
+          walletBalance: s.walletBalance - amount,
+          walletTx: [
+            { id: uid("wt"), type: "tarik", amount: -amount, note: "Tarik dana", createdAt: Date.now() },
+            ...s.walletTx,
+          ],
+        }));
+        return true;
       },
 
       cartCount: () => get().cart.reduce((n, c) => n + c.qty, 0),
@@ -428,6 +552,12 @@ export const useStore = create<State>()(
           cart: [],
           orders: [],
           reviews: SEED_REVIEWS,
+          reels: SEED_REELS,
+          groups: SEED_GROUPS,
+          joinedGroupIds: [],
+          groupPosts: SEED_GROUP_POSTS,
+          walletBalance: SEED_WALLET_BALANCE,
+          walletTx: SEED_WALLET_TX,
           activeChatUserId: null,
           theme: s.theme,
           savedPostIds: [],

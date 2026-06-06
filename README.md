@@ -17,7 +17,10 @@ Aplikasi media sosial & chat ala **Facebook / Instagram**. Dibuat dengan React 1
 ## ✨ Fitur
 
 - **Keamanan & verifikasi** 🔐 — wajib verifikasi akun via **nomor telepon (kode negara mana pun)** atau **email** dengan kode OTP; akun terverifikasi dapat badge ✓ (OTP disimulasikan di demo — siap disambungkan ke SMS/email asli)
-- **Belanja / Marketplace** 🛍️ — semua pengguna bisa **berjualan** (pasang produk + foto), katalog dengan kategori & pencarian, **keranjang belanja**, dan checkout
+- **Reels** 🎬 — video pendek vertikal (swipe), autoplay, mute, suka, buat reel sendiri
+- **Grup / Komunitas** 👥 — gabung/keluar grup, diskusi di dalam grup
+- **Dompet penjual** 💰 — saldo, pendapatan penjualan, top up, tarik dana, bayar pakai saldo
+- **Belanja / Marketplace** 🛍️ — semua pengguna bisa **berjualan**, keranjang, checkout (alamat + pembayaran transfer/e-wallet/COD/saldo), status pesanan, ulasan & rating bintang
 - **Beranda (Feed)** — postingan teks & foto, urut terbaru
 - **Stories** — bar cerita dengan viewer fullscreen (ala IG)
 - **Jelajahi (Explore)** — grid foto + pencarian, klik untuk buka postingan

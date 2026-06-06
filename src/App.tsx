@@ -13,6 +13,9 @@ import { Settings } from "./pages/Settings";
 import { Live } from "./pages/Live";
 import { Shop } from "./pages/Shop";
 import { Orders } from "./pages/Orders";
+import { Reels } from "./pages/Reels";
+import { Groups } from "./pages/Groups";
+import { Wallet } from "./pages/Wallet";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
@@ -72,9 +75,12 @@ export default function App() {
           <div key={view} className="animate-fade">
             {view === "feed" && <Feed />}
             {view === "explore" && <Explore />}
+            {view === "reels" && <Reels />}
             {view === "live" && <Live />}
             {view === "shop" && <Shop onOpenCart={() => setCartOpen(true)} onNavigate={setView} />}
             {view === "orders" && <Orders />}
+            {view === "groups" && <Groups />}
+            {view === "wallet" && <Wallet />}
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}

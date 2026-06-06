@@ -96,7 +96,7 @@ export interface ShippingAddress {
 
 export type OrderStatus = "dikemas" | "dikirim" | "selesai";
 
-export type PaymentMethod = "transfer" | "ewallet" | "cod";
+export type PaymentMethod = "saldo" | "transfer" | "ewallet" | "cod";
 
 export interface Order {
   id: string;
@@ -114,6 +114,44 @@ export interface Review {
   userId: string;
   rating: number; // 1-5
   text: string;
+  createdAt: number;
+}
+
+export interface Reel {
+  id: string;
+  userId: string;
+  video: string;
+  caption: string;
+  music: string;
+  likedBy: string[];
+  comments: number;
+  createdAt: number;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  cover: string;
+  category: string;
+  members: number;
+}
+
+export interface GroupPost {
+  id: string;
+  groupId: string;
+  userId: string;
+  text: string;
+  createdAt: number;
+}
+
+export type WalletTxType = "penjualan" | "topup" | "tarik" | "belanja";
+
+export interface WalletTx {
+  id: string;
+  type: WalletTxType;
+  amount: number; // + masuk, - keluar
+  note: string;
   createdAt: number;
 }
 

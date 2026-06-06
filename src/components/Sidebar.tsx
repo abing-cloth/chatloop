@@ -1,6 +1,7 @@
 import {
   Bell,
   Bookmark,
+  Clapperboard,
   Home,
   LogOut,
   MessageCircle,
@@ -12,6 +13,8 @@ import {
   Store,
   Sun,
   User as UserIcon,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
@@ -20,9 +23,12 @@ import { InstallButton } from "./InstallButton";
 export type View =
   | "feed"
   | "explore"
+  | "reels"
   | "live"
   | "shop"
   | "orders"
+  | "groups"
+  | "wallet"
   | "messages"
   | "notifications"
   | "saved"
@@ -32,8 +38,11 @@ export type View =
 const NAV = [
   { id: "feed", label: "Beranda", icon: Home },
   { id: "explore", label: "Jelajahi", icon: Search },
+  { id: "reels", label: "Reels", icon: Clapperboard },
   { id: "live", label: "Live", icon: Radio },
   { id: "shop", label: "Belanja", icon: Store },
+  { id: "groups", label: "Grup", icon: Users },
+  { id: "wallet", label: "Dompet", icon: Wallet },
   { id: "messages", label: "Pesan", icon: MessageCircle },
   { id: "notifications", label: "Notifikasi", icon: Bell },
   { id: "saved", label: "Tersimpan", icon: Bookmark },

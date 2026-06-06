@@ -1,12 +1,16 @@
 import type {
   Conversation,
+  Group,
+  GroupPost,
   LiveStream,
   Post,
   Product,
+  Reel,
   Review,
   ScheduledLive,
   Story,
   User,
+  WalletTx,
 } from "./types";
 
 const img = (seed: string, w = 800, h = 800) =>
@@ -127,6 +131,43 @@ export const SEED_PRODUCTS: Product[] = [
   { id: "pr6", sellerId: "u1", name: "Lilin Aromaterapi Lavender", price: 55000, image: img("prod-candle", 600, 600), description: "Lilin soy wax aroma lavender, tahan 30+ jam. Bikin rileks.", category: "Rumah Tangga", createdAt: now - 40 * hr },
   { id: "pr7", sellerId: "u3", name: "Serum Vitamin C 20ml", price: 98000, image: img("prod-serum", 600, 600), description: "Serum brightening vitamin C, mencerahkan & melembapkan kulit.", category: "Kecantikan", createdAt: now - 50 * hr },
   { id: "pr8", sellerId: "u2", name: "Tripod Kamera Aluminium", price: 230000, image: img("prod-tripod", 600, 600), description: "Tripod ringan tinggi 1,5m, max beban 5kg. Plus tas pembawa.", category: "Elektronik", createdAt: now - 60 * hr },
+];
+
+const SAMPLE_VIDS = [
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+];
+
+export const SEED_REELS: Reel[] = [
+  { id: "re1", userId: "u3", video: SAMPLE_VIDS[0], caption: "Sunset di pantai gak ada obat 🌅🔥 #travel", music: "Lagu Senja - Lo-fi", likedBy: ["u1", "u2", "u4"], comments: 128, createdAt: now - 1 * hr },
+  { id: "re2", userId: "u4", video: SAMPLE_VIDS[1], caption: "Demo fitur baru, seru banget bikinnya 🚀 #coding", music: "Energetic Beat", likedBy: ["u5"], comments: 64, createdAt: now - 4 * hr },
+  { id: "re3", userId: "u1", video: SAMPLE_VIDS[2], caption: "Morning ride, udara sejuk ☕🚲", music: "Chill Vibes", likedBy: ["u2", "u3"], comments: 39, createdAt: now - 9 * hr },
+  { id: "re4", userId: "u5", video: SAMPLE_VIDS[3], caption: "Stretching dulu sebelum mulai hari 🧘‍♀️✨", music: "Calm Piano", likedBy: ["u1"], comments: 21, createdAt: now - 20 * hr },
+];
+
+export const SEED_GROUPS: Group[] = [
+  { id: "g1", name: "Pecinta Kopi Nusantara", description: "Diskusi seputar kopi, seduh manual, & rekomendasi biji.", cover: img("grp-coffee", 600, 300), category: "Hobi", members: 12480 },
+  { id: "g2", name: "Developer Indonesia", description: "Ngobrol coding, karier, & berbagi project.", cover: img("grp-dev", 600, 300), category: "Teknologi", members: 38210 },
+  { id: "g3", name: "Backpacker & Traveler", description: "Tips jalan hemat, itinerary, & cerita perjalanan.", cover: img("grp-travel", 600, 300), category: "Travel", members: 24105 },
+  { id: "g4", name: "Jual Beli Online", description: "Pasar komunitas — promosikan & cari barang.", cover: img("grp-market", 600, 300), category: "Jual Beli", members: 56720 },
+  { id: "g5", name: "Sehat & Yoga", description: "Rutinitas sehat, yoga, & mindfulness bareng.", cover: img("grp-yoga", 600, 300), category: "Kesehatan", members: 9340 },
+];
+
+export const SEED_GROUP_POSTS: GroupPost[] = [
+  { id: "gp1", groupId: "g1", userId: "u1", text: "Ada rekomendasi grinder manual yang oke di bawah 500rb?", createdAt: now - 3 * hr },
+  { id: "gp2", groupId: "g1", userId: "u3", text: "Aku pakai Timemore C2, mantap buat pemula!", createdAt: now - 2 * hr },
+  { id: "gp3", groupId: "g2", userId: "u4", text: "Lagi belajar React, ada tips state management yang simpel?", createdAt: now - 5 * hr },
+  { id: "gp4", groupId: "g3", userId: "u3", text: "Itinerary 3 hari di Yogyakarta dong, budget 1jt 🙏", createdAt: now - 8 * hr },
+];
+
+export const SEED_WALLET_BALANCE = 1250000;
+export const SEED_WALLET_TX: WalletTx[] = [
+  { id: "wt1", type: "penjualan", amount: 85000, note: "Penjualan: Biji Kopi Arabika 250gr", createdAt: now - 6 * hr },
+  { id: "wt2", type: "penjualan", amount: 175000, note: "Penjualan: Tas Rotan Handmade", createdAt: now - 28 * hr },
+  { id: "wt3", type: "tarik", amount: -200000, note: "Tarik dana ke Bank BCA", createdAt: now - 2 * day },
+  { id: "wt4", type: "penjualan", amount: 98000, note: "Penjualan: Serum Vitamin C 20ml", createdAt: now - 3 * day },
 ];
 
 export const SEED_REVIEWS: Review[] = [

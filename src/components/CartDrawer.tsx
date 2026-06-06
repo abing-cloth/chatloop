@@ -19,6 +19,7 @@ import type { PaymentMethod } from "../lib/types";
 type Step = "cart" | "address" | "done";
 
 const PAYMENTS: { id: PaymentMethod; label: string; desc: string; icon: typeof Wallet }[] = [
+  { id: "saldo", label: "Saldo ChatLoop", desc: "Bayar pakai dompet", icon: Wallet },
   { id: "transfer", label: "Transfer Bank", desc: "BCA, BNI, Mandiri, dll", icon: CreditCard },
   { id: "ewallet", label: "E-Wallet", desc: "GoPay, OVO, DANA, ShopeePay", icon: Wallet },
   { id: "cod", label: "Bayar di Tempat (COD)", desc: "Bayar tunai saat barang tiba", icon: Banknote },
@@ -40,6 +41,7 @@ export function CartDrawer({
   const removeFromCart = useStore((s) => s.removeFromCart);
   const checkout = useStore((s) => s.checkout);
   const total = useStore((s) => s.cartTotal());
+  const walletBalance = useStore((s) => s.walletBalance);
 
   const [step, setStep] = useState<Step>("cart");
   const [name, setName] = useState(me.name);
@@ -66,6 +68,8 @@ export function CartDrawer({
     if (!name.trim()) return setError("Nama penerima wajib diisi.");
     if (phone.replace(/\D/g, "").length < 6) return setError("Nomor telepon tidak valid.");
     if (!address.trim()) return setError("Alamat pengiriman wajib diisi.");
+    if (payment === "saldo" && walletBalance < total)
+      return setError("Saldo tidak cukup. Pilih metode lain atau top up dompet.");
     checkout({ name: name.trim(), phone: phone.trim(), address: address.trim() }, payment);
     setStep("done");
   }
@@ -213,7 +217,9 @@ export function CartDrawer({
                   <pm.icon size={20} className={payment === pm.id ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-zinc-500"} />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{pm.label}</p>
-                    <p className="text-xs text-zinc-500">{pm.desc}</p>
+                    <p className="text-xs text-zinc-500">
+                      {pm.id === "saldo" ? `Saldo: ${formatRupiah(walletBalance)}` : pm.desc}
+                    </p>
                   </div>
                   <span
                     className={cn(

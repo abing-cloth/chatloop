@@ -1,11 +1,11 @@
-import { Home, Radio, Search, Store } from "lucide-react";
+import { Clapperboard, Home, Radio, Store } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import type { View } from "./Sidebar";
 
 const ITEMS = [
   { id: "feed", icon: Home },
-  { id: "explore", icon: Search },
+  { id: "reels", icon: Clapperboard },
   { id: "live", icon: Radio },
   { id: "shop", icon: Store },
 ] as const;
