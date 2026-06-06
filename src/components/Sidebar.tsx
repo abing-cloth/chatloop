@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Search,
   Settings as SettingsIcon,
+  Store,
   Sun,
   User as UserIcon,
 } from "lucide-react";
@@ -20,6 +21,7 @@ export type View =
   | "feed"
   | "explore"
   | "live"
+  | "shop"
   | "messages"
   | "notifications"
   | "saved"
@@ -30,6 +32,7 @@ const NAV = [
   { id: "feed", label: "Beranda", icon: Home },
   { id: "explore", label: "Jelajahi", icon: Search },
   { id: "live", label: "Live", icon: Radio },
+  { id: "shop", label: "Belanja", icon: Store },
   { id: "messages", label: "Pesan", icon: MessageCircle },
   { id: "notifications", label: "Notifikasi", icon: Bell },
   { id: "saved", label: "Tersimpan", icon: Bookmark },

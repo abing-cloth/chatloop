@@ -1,4 +1,4 @@
-import { Heart, Home, MessageCircle, Moon, Search, Sun } from "lucide-react";
+import { Heart, Home, MessageCircle, Moon, Search, ShoppingCart, Sun } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import type { View } from "./Sidebar";
@@ -6,13 +6,16 @@ import type { View } from "./Sidebar";
 export function TopBar({
   view,
   onNavigate,
+  onOpenCart,
 }: {
   view: View;
   onNavigate: (v: View) => void;
+  onOpenCart: () => void;
 }) {
   const me = useStore((s) => s.me());
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const cartCount = useStore((s) => s.cartCount());
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -53,6 +56,17 @@ export function TopBar({
           >
             <Heart size={22} />
           </IconBtn>
+          <button
+            onClick={onOpenCart}
+            className="relative rounded-full p-2.5 text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            <ShoppingCart size={22} />
+            {cartCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
           <IconBtn onClick={toggleTheme}>
             {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
           </IconBtn>

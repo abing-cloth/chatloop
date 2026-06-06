@@ -66,4 +66,33 @@ export interface ScheduledLive {
   startsAt: number; // epoch ms
 }
 
+export interface Product {
+  id: string;
+  sellerId: string;
+  name: string;
+  price: number; // Rupiah
+  image: string;
+  description: string;
+  category: string;
+  createdAt: number;
+}
+
+export interface CartItem {
+  productId: string;
+  qty: number;
+}
+
+export interface OrderItem {
+  name: string;
+  price: number;
+  qty: number;
+}
+
+export interface Order {
+  id: string;
+  items: OrderItem[];
+  total: number;
+  createdAt: number;
+}
+
 export type Theme = "light" | "dark";

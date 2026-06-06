@@ -1,4 +1,12 @@
-import type { Conversation, LiveStream, Post, ScheduledLive, Story, User } from "./types";
+import type {
+  Conversation,
+  LiveStream,
+  Post,
+  Product,
+  ScheduledLive,
+  Story,
+  User,
+} from "./types";
 
 const img = (seed: string, w = 800, h = 800) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`;
@@ -98,6 +106,26 @@ export const SEED_SCHEDULED: ScheduledLive[] = [
   { id: "sc1", userId: "u1", title: "Workshop seduh kopi manual ☕", category: "Obrolan", thumbnail: img("sched-coffee", 600, 400), startsAt: now + 3 * hr },
   { id: "sc2", userId: "u4", title: "Bedah fitur baru ChatLoop bareng 💻", category: "Teknologi", thumbnail: img("sched-tech", 600, 400), startsAt: now + 1 * day },
   { id: "sc3", userId: "u3", title: "Live trip ke Raja Ampat 🐠", category: "Travel", thumbnail: img("sched-travel", 600, 400), startsAt: now + 2 * day + 5 * hr },
+];
+
+export const PRODUCT_CATEGORIES = [
+  "Fashion",
+  "Elektronik",
+  "Makanan",
+  "Hobi",
+  "Rumah Tangga",
+  "Kecantikan",
+];
+
+export const SEED_PRODUCTS: Product[] = [
+  { id: "pr1", sellerId: "u1", name: "Biji Kopi Arabika 250gr", price: 85000, image: img("prod-coffee", 600, 600), description: "Biji kopi arabika single origin, sangrai medium. Aroma cokelat & karamel.", category: "Makanan", createdAt: now - 2 * hr },
+  { id: "pr2", sellerId: "u2", name: "Kamera Mirrorless + Lensa Kit", price: 7250000, image: img("prod-camera", 600, 600), description: "Mirrorless 24MP, kondisi 95%, lengkap box & charger. Cocok untuk pemula.", category: "Elektronik", createdAt: now - 5 * hr },
+  { id: "pr3", sellerId: "u3", name: "Tas Rotan Handmade", price: 175000, image: img("prod-bag", 600, 600), description: "Tas rotan anyaman tangan, ringan & estetik untuk jalan-jalan.", category: "Fashion", createdAt: now - 8 * hr },
+  { id: "pr4", sellerId: "u5", name: "Matras Yoga Anti-Slip", price: 120000, image: img("prod-yoga", 600, 600), description: "Matras yoga tebal 8mm, anti-slip, gratis tali pengikat.", category: "Hobi", createdAt: now - 26 * hr },
+  { id: "pr5", sellerId: "u4", name: "Mechanical Keyboard 75%", price: 650000, image: img("prod-keyboard", 600, 600), description: "Keyboard mekanik hot-swap, switch merah, RGB. Mantap buat ngoding.", category: "Elektronik", createdAt: now - 30 * hr },
+  { id: "pr6", sellerId: "u1", name: "Lilin Aromaterapi Lavender", price: 55000, image: img("prod-candle", 600, 600), description: "Lilin soy wax aroma lavender, tahan 30+ jam. Bikin rileks.", category: "Rumah Tangga", createdAt: now - 40 * hr },
+  { id: "pr7", sellerId: "u3", name: "Serum Vitamin C 20ml", price: 98000, image: img("prod-serum", 600, 600), description: "Serum brightening vitamin C, mencerahkan & melembapkan kulit.", category: "Kecantikan", createdAt: now - 50 * hr },
+  { id: "pr8", sellerId: "u2", name: "Tripod Kamera Aluminium", price: 230000, image: img("prod-tripod", 600, 600), description: "Tripod ringan tinggi 1,5m, max beban 5kg. Plus tas pembawa.", category: "Elektronik", createdAt: now - 60 * hr },
 ];
 
 export const SEED_CONVERSATIONS: Conversation[] = [

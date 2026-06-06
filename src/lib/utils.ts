@@ -38,6 +38,14 @@ export function countdown(ts: number): string {
   return `${m} menit lagi`;
 }
 
+export function formatRupiah(n: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
 export function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

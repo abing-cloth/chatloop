@@ -11,15 +11,18 @@ import { Notifications } from "./pages/Notifications";
 import { Saved } from "./pages/Saved";
 import { Settings } from "./pages/Settings";
 import { Live } from "./pages/Live";
+import { Shop } from "./pages/Shop";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
+import { CartDrawer } from "./components/CartDrawer";
 import { useStore } from "./lib/store";
 
 export default function App() {
   const [view, setView] = useState<View>("feed");
   const [showSplash, setShowSplash] = useState(true);
   const [unlocked, setUnlocked] = useState(true);
+  const [cartOpen, setCartOpen] = useState(false);
   const theme = useStore((s) => s.theme);
   const isAuthed = useStore((s) => s.isAuthed);
   const settings = useStore((s) => s.settings);
@@ -61,7 +64,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-16 text-zinc-900 lg:pb-0 dark:bg-zinc-950 dark:text-zinc-100">
-      <TopBar view={view} onNavigate={setView} />
+      <TopBar view={view} onNavigate={setView} onOpenCart={() => setCartOpen(true)} />
       <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
         <Sidebar view={view} onNavigate={setView} />
         <main className="min-w-0 flex-1">
@@ -69,6 +72,7 @@ export default function App() {
             {view === "feed" && <Feed />}
             {view === "explore" && <Explore />}
             {view === "live" && <Live />}
+            {view === "shop" && <Shop onOpenCart={() => setCartOpen(true)} />}
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}
@@ -79,6 +83,7 @@ export default function App() {
         {view === "feed" && <RightBar />}
       </div>
       <MobileNav view={view} onNavigate={setView} />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 }

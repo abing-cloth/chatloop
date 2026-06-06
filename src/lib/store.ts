@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  CartItem,
   Comment,
   Conversation,
   LiveStream,
+  Order,
   Post,
+  Product,
   ScheduledLive,
   Story,
   Theme,
@@ -15,6 +18,7 @@ import {
   SEED_CONVERSATIONS,
   SEED_LIVES,
   SEED_POSTS,
+  SEED_PRODUCTS,
   SEED_SCHEDULED,
   SEED_STORIES,
   SEED_USERS,
@@ -61,6 +65,9 @@ interface State {
   liveStreams: LiveStream[];
   scheduledLives: ScheduledLive[];
   reminderIds: string[];
+  products: Product[];
+  cart: CartItem[];
+  orders: Order[];
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
@@ -87,6 +94,23 @@ interface State {
   toggleFollow: (userId: string) => void;
   toggleReminder: (scheduledId: string) => void;
 
+  // marketplace
+  addProduct: (data: {
+    name: string;
+    price: number;
+    image: string;
+    description: string;
+    category: string;
+  }) => void;
+  deleteProduct: (id: string) => void;
+  addToCart: (productId: string) => void;
+  setQty: (productId: string, qty: number) => void;
+  removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+  checkout: () => void;
+  cartCount: () => number;
+  cartTotal: () => number;
+
   addPost: (text: string, image?: string) => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
@@ -108,6 +132,9 @@ export const useStore = create<State>()(
       liveStreams: SEED_LIVES,
       scheduledLives: SEED_SCHEDULED,
       reminderIds: [],
+      products: SEED_PRODUCTS,
+      cart: [],
+      orders: [],
       theme: "light",
       savedPostIds: [],
       followingIds: [],
@@ -175,6 +202,78 @@ export const useStore = create<State>()(
             ? s.reminderIds.filter((id) => id !== scheduledId)
             : [scheduledId, ...s.reminderIds],
         })),
+
+      addProduct: ({ name, price, image, description, category }) =>
+        set((s) => ({
+          products: [
+            {
+              id: uid("pr"),
+              sellerId: s.currentUserId,
+              name: name.trim(),
+              price,
+              image,
+              description: description.trim(),
+              category,
+              createdAt: Date.now(),
+            },
+            ...s.products,
+          ],
+        })),
+
+      deleteProduct: (id) =>
+        set((s) => ({
+          products: s.products.filter((p) => p.id !== id),
+          cart: s.cart.filter((c) => c.productId !== id),
+        })),
+
+      addToCart: (productId) =>
+        set((s) => {
+          const found = s.cart.find((c) => c.productId === productId);
+          return {
+            cart: found
+              ? s.cart.map((c) =>
+                  c.productId === productId ? { ...c, qty: c.qty + 1 } : c
+                )
+              : [...s.cart, { productId, qty: 1 }],
+          };
+        }),
+
+      setQty: (productId, qty) =>
+        set((s) => ({
+          cart:
+            qty <= 0
+              ? s.cart.filter((c) => c.productId !== productId)
+              : s.cart.map((c) =>
+                  c.productId === productId ? { ...c, qty } : c
+                ),
+        })),
+
+      removeFromCart: (productId) =>
+        set((s) => ({ cart: s.cart.filter((c) => c.productId !== productId) })),
+
+      clearCart: () => set({ cart: [] }),
+
+      checkout: () =>
+        set((s) => {
+          const items = s.cart
+            .map((c) => {
+              const p = s.products.find((pr) => pr.id === c.productId);
+              return p ? { name: p.name, price: p.price, qty: c.qty } : null;
+            })
+            .filter((x): x is NonNullable<typeof x> => Boolean(x));
+          if (items.length === 0) return {};
+          const total = items.reduce((n, it) => n + it.price * it.qty, 0);
+          const order: Order = { id: uid("ord"), items, total, createdAt: Date.now() };
+          return { orders: [order, ...s.orders], cart: [] };
+        }),
+
+      cartCount: () => get().cart.reduce((n, c) => n + c.qty, 0),
+
+      cartTotal: () =>
+        get().cart.reduce((n, c) => {
+          const p = get().products.find((pr) => pr.id === c.productId);
+          return n + (p ? p.price * c.qty : 0);
+        }, 0),
 
       sendMessage: (userId, text) =>
         set((s) => {
@@ -266,6 +365,9 @@ export const useStore = create<State>()(
           liveStreams: SEED_LIVES,
           scheduledLives: SEED_SCHEDULED,
           reminderIds: [],
+          products: SEED_PRODUCTS,
+          cart: [],
+          orders: [],
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],
