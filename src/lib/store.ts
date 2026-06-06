@@ -57,6 +57,9 @@ export interface Settings {
   biometricEnabled: boolean;
   biometricCredId: string | null;
   creatorMode: boolean;
+  lang: "id" | "en";
+  dataSaver: boolean;
+  pushEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -72,6 +75,9 @@ const DEFAULT_SETTINGS: Settings = {
   biometricEnabled: false,
   biometricCredId: null,
   creatorMode: false,
+  lang: "id",
+  dataSaver: false,
+  pushEnabled: false,
 };
 
 interface State {

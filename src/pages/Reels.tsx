@@ -51,9 +51,10 @@ function ReelCard({ reel, muted, onToggleMute }: { reel: Reel; muted: boolean; o
   const author = user(reel.userId);
   const liked = reel.likedBy.includes(me);
 
+  const dataSaver = useStore((s) => s.settings.dataSaver);
   const videoRef = useRef<HTMLVideoElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(!dataSaver);
   const [filter, setFilter] = useState("normal");
   const [showFilter, setShowFilter] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -64,11 +65,12 @@ function ReelCard({ reel, muted, onToggleMute }: { reel: Reel; muted: boolean; o
     const v = videoRef.current, wrap = wrapRef.current;
     if (!v || !wrap) return;
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { v.play().catch(() => {}); setPlaying(true); } else v.pause();
+      if (e.isIntersecting && !dataSaver) { v.play().catch(() => {}); setPlaying(true); }
+      else { v.pause(); if (!e.isIntersecting) setPlaying(false); }
     }, { threshold: 0.6 });
     io.observe(wrap);
     return () => io.disconnect();
-  }, []);
+  }, [dataSaver]);
 
   function togglePlay() {
     const v = videoRef.current;
@@ -78,7 +80,7 @@ function ReelCard({ reel, muted, onToggleMute }: { reel: Reel; muted: boolean; o
 
   return (
     <div ref={wrapRef} className="relative h-full w-full snap-start snap-always">
-      <video ref={videoRef} src={reel.video} loop muted={muted} playsInline onClick={togglePlay} className="h-full w-full rounded-2xl bg-black object-cover" style={{ filter: filterCss }} />
+      <video ref={videoRef} src={reel.video} loop muted={muted} playsInline preload={dataSaver ? "none" : "metadata"} onClick={togglePlay} className="h-full w-full rounded-2xl bg-black object-cover" style={{ filter: filterCss }} />
 
       {!playing && <button onClick={togglePlay} className="absolute inset-0 grid place-items-center"><Play size={56} className="fill-white/80 text-white/80" /></button>}
 

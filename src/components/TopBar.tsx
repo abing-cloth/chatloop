@@ -1,6 +1,7 @@
 import { Heart, Home, MessageCircle, Moon, Search, ShoppingCart, Sun } from "lucide-react";
 import { useStore } from "../lib/store";
 import { asset, cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import type { View } from "./Sidebar";
 
 export function TopBar({
@@ -16,6 +17,7 @@ export function TopBar({
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   const cartCount = useStore((s) => s.cartCount());
+  const tr = useT();
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -35,7 +37,7 @@ export function TopBar({
             readOnly
             onFocus={() => onNavigate("explore")}
             onClick={() => onNavigate("explore")}
-            placeholder="Cari di ChatLoop"
+            placeholder={tr("common.search")}
             className="w-full cursor-pointer rounded-full bg-zinc-100 py-2.5 pl-10 pr-4 text-sm outline-none focus:bg-zinc-50 focus:ring-2 focus:ring-fuchsia-200 dark:bg-zinc-800 dark:focus:bg-zinc-800"
           />
         </div>

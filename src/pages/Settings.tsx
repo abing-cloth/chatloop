@@ -18,6 +18,8 @@ import type { Settings as SettingsType } from "../lib/store";
 import { cn } from "../lib/utils";
 import { InstallButton } from "../components/InstallButton";
 import { biometricAvailable, registerBiometric } from "../lib/biometric";
+import { useT } from "../lib/i18n";
+import { requestNotifPermission, showNotif } from "../lib/notify";
 
 export function Settings() {
   const theme = useStore((s) => s.theme);
@@ -27,9 +29,20 @@ export function Settings() {
   const logout = useStore((s) => s.logout);
   const reset = useStore((s) => s.resetAll);
   const me = useStore((s) => s.me());
+  const tr = useT();
 
   const [pinModal, setPinModal] = useState(false);
   const [bioMsg, setBioMsg] = useState("");
+
+  async function togglePush() {
+    if (settings.pushEnabled) {
+      setSetting("pushEnabled", false);
+      return;
+    }
+    const ok = await requestNotifPermission();
+    setSetting("pushEnabled", ok);
+    if (ok) showNotif("ChatLoop 🔔", "Notifikasi aktif! Kamu akan dapat kabar terbaru.");
+  }
 
   async function toggleAppLock() {
     if (settings.appLockEnabled) {
@@ -72,13 +85,31 @@ export function Settings() {
     <div className="mx-auto w-full max-w-xl space-y-5">
       <h2 className="px-1 text-lg font-bold">Pengaturan</h2>
 
-      <Section icon={<Moon size={18} />} title="Tampilan">
+      <Section icon={<Moon size={18} />} title={tr("set.appearance")}>
         <Row
-          label="Mode gelap"
-          desc="Tampilan nyaman saat malam hari"
+          label={tr("set.darkmode")}
+          desc={tr("set.darkmodeDesc")}
           checked={theme === "dark"}
           onChange={toggleTheme}
         />
+        <div className="px-1 py-2">
+          <p className="text-sm font-medium">{tr("set.language")}</p>
+          <div className="mt-2 flex gap-2">
+            {([["id", "🇮🇩 Indonesia"], ["en", "🇬🇧 English"]] as const).map(([code, label]) => (
+              <button
+                key={code}
+                onClick={() => setSetting("lang", code)}
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+                  settings.lang === code ? "bg-fuchsia-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Toggle k="dataSaver" label={tr("set.dataSaver")} desc={tr("set.dataSaverDesc")} s={settings} set={setSetting} />
       </Section>
 
       <Section icon={<BadgeCheck size={18} />} title="Kreator & Verifikasi">
@@ -105,7 +136,16 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section icon={<Bell size={18} />} title="Notifikasi">
+      <Section icon={<Bell size={18} />} title={tr("set.notifications")}>
+        <Row label={tr("set.push")} desc={tr("set.pushDesc")} checked={settings.pushEnabled} onChange={togglePush} />
+        {settings.pushEnabled && (
+          <button
+            onClick={() => showNotif("ChatLoop 🔔", "Ini contoh notifikasi dari ChatLoop!")}
+            className="mb-1 ml-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            Kirim notifikasi contoh
+          </button>
+        )}
         <Toggle k="notifLikes" label="Suka" desc="Saat ada yang menyukai postinganmu" s={settings} set={setSetting} />
         <Toggle k="notifComments" label="Komentar" desc="Saat ada komentar baru" s={settings} set={setSetting} />
         <Toggle k="notifFollows" label="Pengikut baru" desc="Saat ada yang mengikutimu" s={settings} set={setSetting} />

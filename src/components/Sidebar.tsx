@@ -19,22 +19,23 @@ import {
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import { InstallButton } from "./InstallButton";
+import { useT } from "../lib/i18n";
 import type { View } from "../lib/types";
 export type { View } from "../lib/types";
 
 const NAV = [
-  { id: "feed", label: "Beranda", icon: Home },
-  { id: "explore", label: "Jelajahi", icon: Search },
-  { id: "reels", label: "Reels", icon: Clapperboard },
-  { id: "live", label: "Live", icon: Radio },
-  { id: "shop", label: "Belanja", icon: Store },
-  { id: "groups", label: "Grup", icon: Users },
-  { id: "wallet", label: "Dompet", icon: Wallet },
-  { id: "messages", label: "Pesan", icon: MessageCircle },
-  { id: "notifications", label: "Notifikasi", icon: Bell },
-  { id: "saved", label: "Tersimpan", icon: Bookmark },
-  { id: "profile", label: "Profil", icon: UserIcon },
-  { id: "settings", label: "Pengaturan", icon: SettingsIcon },
+  { id: "feed", icon: Home },
+  { id: "explore", icon: Search },
+  { id: "reels", icon: Clapperboard },
+  { id: "live", icon: Radio },
+  { id: "shop", icon: Store },
+  { id: "groups", icon: Users },
+  { id: "wallet", icon: Wallet },
+  { id: "messages", icon: MessageCircle },
+  { id: "notifications", icon: Bell },
+  { id: "saved", icon: Bookmark },
+  { id: "profile", icon: UserIcon },
+  { id: "settings", icon: SettingsIcon },
 ] as const;
 
 export function Sidebar({
@@ -50,6 +51,7 @@ export function Sidebar({
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   const liveCount = useStore((s) => s.liveStreams.length);
+  const tr = useT();
 
   return (
     <aside className="sticky top-20 hidden h-fit w-64 shrink-0 lg:block">
@@ -68,7 +70,7 @@ export function Sidebar({
               )}
             >
               <item.icon size={22} className={active ? "text-fuchsia-600 dark:text-fuchsia-400" : ""} />
-              {item.label}
+              {tr(`nav.${item.id}`)}
               {item.id === "live" && liveCount > 0 && (
                 <span className="ml-auto flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-600 dark:bg-red-950/50 dark:text-red-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-live-dot" /> {liveCount}
@@ -84,7 +86,7 @@ export function Sidebar({
         className="mt-2 flex w-full items-center gap-4 rounded-xl px-4 py-3 text-[15px] font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
-        {theme === "dark" ? "Mode Terang" : "Mode Gelap"}
+        {theme === "dark" ? tr("common.lightMode") : tr("common.darkMode")}
       </button>
 
       <InstallButton hideWhenInstalled className="mt-3 w-full" />
@@ -103,14 +105,14 @@ export function Sidebar({
             title="Reset data demo"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-zinc-100 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
-            <RotateCcw size={14} /> Reset
+            <RotateCcw size={14} /> {tr("common.reset")}
           </button>
           <button
             onClick={logout}
             title="Keluar / ganti akun"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-zinc-100 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:bg-zinc-800 dark:hover:bg-red-950/40"
           >
-            <LogOut size={14} /> Keluar
+            <LogOut size={14} /> {tr("common.logout")}
           </button>
         </div>
       </div>
