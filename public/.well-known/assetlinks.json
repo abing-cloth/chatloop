@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.abingcloth.chatloop",
+      "sha256_cert_fingerprints": [
+        "16:9F:0B:77:41:48:9D:E8:3E:CE:23:0A:FD:9C:F1:E1:73:E7:4D:6A:7F:43:4D:70:F2:6C:DD:B2:6A:3D:4D:EC"
+      ]
+    }
+  }
+]
