@@ -60,6 +60,7 @@ export interface Settings {
   lang: "id" | "en";
   dataSaver: boolean;
   pushEnabled: boolean;
+  accent: "violet" | "rose" | "blue" | "emerald" | "orange";
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -78,6 +79,7 @@ const DEFAULT_SETTINGS: Settings = {
   lang: "id",
   dataSaver: false,
   pushEnabled: false,
+  accent: "violet",
 };
 
 interface State {
@@ -175,6 +177,9 @@ interface State {
   withdraw: (amount: number) => boolean;
 
   addPost: (text: string, image?: string) => void;
+  postDraft: { text: string; image?: string } | null;
+  savePostDraft: (d: { text: string; image?: string }) => void;
+  clearPostDraft: () => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
   addComment: (postId: string, text: string) => void;
@@ -550,6 +555,11 @@ export const useStore = create<State>()(
             ...s.posts,
           ],
         })),
+
+      postDraft: null,
+      savePostDraft: (d) =>
+        set({ postDraft: d.text.trim() || d.image ? d : null }),
+      clearPostDraft: () => set({ postDraft: null }),
 
       deletePost: (id) =>
         set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),

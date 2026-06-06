@@ -34,6 +34,44 @@ body {
   background: #3f3f46;
 }
 
+/* === Warna tema (accent) === remap fuchsia & purple ke palet pilihan === */
+:root[data-accent="rose"] {
+  --color-fuchsia-50: #fff1f2;  --color-purple-50: #fff1f2;
+  --color-fuchsia-300: #fda4af; --color-purple-300: #fda4af;
+  --color-fuchsia-400: #fb7185; --color-purple-400: #fb7185;
+  --color-fuchsia-500: #f43f5e; --color-purple-500: #f43f5e;
+  --color-fuchsia-600: #e11d48; --color-purple-600: #e11d48;
+  --color-fuchsia-700: #be123c; --color-purple-700: #be123c;
+  --color-fuchsia-950: #4c0519; --color-purple-950: #4c0519;
+}
+:root[data-accent="blue"] {
+  --color-fuchsia-50: #eff6ff;  --color-purple-50: #eff6ff;
+  --color-fuchsia-300: #93c5fd; --color-purple-300: #93c5fd;
+  --color-fuchsia-400: #60a5fa; --color-purple-400: #60a5fa;
+  --color-fuchsia-500: #3b82f6; --color-purple-500: #3b82f6;
+  --color-fuchsia-600: #2563eb; --color-purple-600: #1d4ed8;
+  --color-fuchsia-700: #1d4ed8; --color-purple-700: #1e40af;
+  --color-fuchsia-950: #172554; --color-purple-950: #172554;
+}
+:root[data-accent="emerald"] {
+  --color-fuchsia-50: #ecfdf5;  --color-purple-50: #ecfdf5;
+  --color-fuchsia-300: #6ee7b7; --color-purple-300: #6ee7b7;
+  --color-fuchsia-400: #34d399; --color-purple-400: #34d399;
+  --color-fuchsia-500: #10b981; --color-purple-500: #10b981;
+  --color-fuchsia-600: #059669; --color-purple-600: #047857;
+  --color-fuchsia-700: #047857; --color-purple-700: #065f46;
+  --color-fuchsia-950: #022c22; --color-purple-950: #022c22;
+}
+:root[data-accent="orange"] {
+  --color-fuchsia-50: #fff7ed;  --color-purple-50: #fff7ed;
+  --color-fuchsia-300: #fdba74; --color-purple-300: #fdba74;
+  --color-fuchsia-400: #fb923c; --color-purple-400: #fb923c;
+  --color-fuchsia-500: #f97316; --color-purple-500: #f97316;
+  --color-fuchsia-600: #ea580c; --color-purple-600: #c2410c;
+  --color-fuchsia-700: #c2410c; --color-purple-700: #9a3412;
+  --color-fuchsia-950: #431407; --color-purple-950: #431407;
+}
+
 @keyframes loop-pop {
   0% { transform: scale(0.6); opacity: 0; }
   60% { transform: scale(1.15); }

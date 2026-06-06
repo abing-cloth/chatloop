@@ -43,6 +43,10 @@ export default function App() {
     document.documentElement.lang = settings.lang;
   }, [settings.lang]);
 
+  useEffect(() => {
+    document.documentElement.dataset.accent = settings.accent;
+  }, [settings.accent]);
+
   // saat app pertama dibuka & sudah login dengan kunci aktif → minta buka kunci
   useEffect(() => {
     const st = useStore.getState();

@@ -109,6 +109,29 @@ export function Settings() {
             ))}
           </div>
         </div>
+        <div className="px-1 py-2">
+          <p className="text-sm font-medium">{tr("set.accent")}</p>
+          <div className="mt-2 flex gap-3">
+            {([
+              ["violet", "#a855f7"],
+              ["rose", "#e11d48"],
+              ["blue", "#2563eb"],
+              ["emerald", "#059669"],
+              ["orange", "#ea580c"],
+            ] as const).map(([key, color]) => (
+              <button
+                key={key}
+                onClick={() => setSetting("accent", key)}
+                className={cn(
+                  "h-8 w-8 rounded-full ring-2 ring-offset-2 transition ring-offset-white dark:ring-offset-zinc-900",
+                  settings.accent === key ? "ring-zinc-400 scale-110" : "ring-transparent"
+                )}
+                style={{ backgroundColor: color }}
+                aria-label={key}
+              />
+            ))}
+          </div>
+        </div>
         <Toggle k="dataSaver" label={tr("set.dataSaver")} desc={tr("set.dataSaverDesc")} s={settings} set={setSetting} />
       </Section>
 

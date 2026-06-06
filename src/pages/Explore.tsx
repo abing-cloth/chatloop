@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Heart, MessageCircle, Search } from "lucide-react";
 import { PostCard } from "../components/PostCard";
 import { useStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 import type { Post } from "../lib/types";
 
 export function Explore() {
+  const tr = useT();
   const posts = useStore((s) => s.posts);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Post | null>(null);
@@ -26,7 +28,7 @@ export function Explore() {
         />
       </div>
 
-      <h2 className="px-1 text-lg font-bold">Jelajahi</h2>
+      <h2 className="px-1 text-lg font-bold">{tr("page.explore")}</h2>
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
