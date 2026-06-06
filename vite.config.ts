@@ -12,17 +12,31 @@ export default defineConfig({
       includeAssets: ["chatloop.svg", "apple-touch-icon.png"],
       devOptions: { enabled: true },
       manifest: {
+        id: "./",
         name: "ChatLoop — Ngobrol, terhubung, tanpa henti",
         short_name: "ChatLoop",
-        description: "Media sosial untuk ngobrol, berbagi momen, cerita, dan tetap terhubung.",
+        description: "Media sosial untuk ngobrol, berbagi momen, cerita, live, belanja, dan tetap terhubung dengan teman.",
         theme_color: "#7c3aed",
         background_color: "#ffffff",
         display: "standalone",
+        display_override: ["standalone", "minimal-ui"],
         orientation: "portrait",
         // relatif terhadap lokasi manifest → benar di root (Netlify/Vercel)
         // maupun sub-path (GitHub Pages: /<repo>/)
         start_url: ".",
+        scope: ".",
         lang: "id",
+        dir: "ltr",
+        categories: ["social", "communication", "lifestyle"],
+        screenshots: [
+          { src: "screenshot-wide.png", sizes: "1280x720", type: "image/png", form_factor: "wide", label: "ChatLoop" },
+          { src: "screenshot-narrow.png", sizes: "720x1280", type: "image/png", form_factor: "narrow", label: "ChatLoop" },
+        ],
+        shortcuts: [
+          { name: "Pesan", short_name: "Pesan", url: "./", icons: [{ src: "icon-192.png", sizes: "192x192" }] },
+          { name: "Belanja", short_name: "Belanja", url: "./", icons: [{ src: "icon-192.png", sizes: "192x192" }] },
+          { name: "Live", short_name: "Live", url: "./", icons: [{ src: "icon-192.png", sizes: "192x192" }] },
+        ],
         icons: [
           {
             src: "chatloop.svg",
