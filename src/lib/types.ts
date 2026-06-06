@@ -62,6 +62,9 @@ export interface Message {
   fromId: string;
   text: string;
   createdAt: number;
+  image?: string;
+  replyToId?: string;
+  read?: boolean;
 }
 
 export interface Conversation {

@@ -133,9 +133,10 @@ interface State {
   findByUsername: (username: string) => User | undefined;
 
   toggleTheme: () => void;
-  sendMessage: (userId: string, text: string) => void;
+  sendMessage: (userId: string, text: string, opts?: { image?: string; replyToId?: string }) => void;
   receiveMessage: (userId: string, text: string) => void;
   deleteMessage: (userId: string, messageId: string) => void;
+  markConversationRead: (userId: string) => void;
   archivedChatIds: string[];
   toggleArchiveChat: (userId: string) => void;
   activeChatUserId: string | null;
@@ -532,13 +533,16 @@ export const useStore = create<State>()(
           return n + (p ? p.price * c.qty : 0);
         }, 0),
 
-      sendMessage: (userId, text) =>
+      sendMessage: (userId, text, opts) =>
         set((s) => {
           const msg = {
             id: uid("m"),
             fromId: s.currentUserId,
             text: text.trim(),
             createdAt: Date.now(),
+            image: opts?.image,
+            replyToId: opts?.replyToId,
+            read: false,
           };
           const exists = s.conversations.some((c) => c.userId === userId);
           return {
@@ -567,6 +571,15 @@ export const useStore = create<State>()(
         set((s) => ({
           conversations: s.conversations.map((c) =>
             c.userId === userId ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) } : c
+          ),
+        })),
+
+      markConversationRead: (userId) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.userId === userId
+              ? { ...c, messages: c.messages.map((m) => (m.fromId === s.currentUserId ? { ...m, read: true } : m)) }
+              : c
           ),
         })),
 

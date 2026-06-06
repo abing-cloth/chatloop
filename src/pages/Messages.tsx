@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, ArchiveRestore, ArrowLeft, Send, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Check, CheckCheck, ImagePlus, Reply, Send, Trash2, X } from "lucide-react";
 import { useStore } from "../lib/store";
-import { cn, timeAgo } from "../lib/utils";
+import { cn, fileToDataUrl, timeAgo } from "../lib/utils";
 import { EmojiPicker } from "../components/EmojiPicker";
 import { MentionText } from "../components/MentionText";
 
@@ -15,6 +15,7 @@ export function Messages() {
   const sendMessage = useStore((s) => s.sendMessage);
   const receiveMessage = useStore((s) => s.receiveMessage);
   const deleteMessage = useStore((s) => s.deleteMessage);
+  const markRead = useStore((s) => s.markConversationRead);
   const activeChatUserId = useStore((s) => s.activeChatUserId);
   const clearActiveChat = useStore((s) => s.clearActiveChat);
   const archived = useStore((s) => s.archivedChatIds);
@@ -26,7 +27,9 @@ export function Messages() {
   const [showArchived, setShowArchived] = useState(false);
   const [text, setText] = useState("");
   const [typing, setTyping] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; text: string; name: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const mentionMatch = text.match(/@([a-zA-Z0-9_.]*)$/);
   const mentionList = mentionMatch
@@ -57,19 +60,33 @@ export function Messages() {
   function send() {
     if (!text.trim() || !activeId) return;
     const to = activeId;
-    sendMessage(to, text);
+    sendMessage(to, text, { replyToId: replyTo?.id });
     setText("");
-    // simulasi lawan bicara mengetik lalu membalas
+    setReplyTo(null);
     setTyping(true);
     setTimeout(() => {
+      markRead(to); // lawan bicara "membaca" pesanmu
       receiveMessage(to, REPLIES[Math.floor(Math.random() * REPLIES.length)]);
       setTyping(false);
     }, 1600);
   }
 
+  async function sendImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f && activeId) {
+      const to = activeId;
+      sendMessage(to, "", { image: await fileToDataUrl(f), replyToId: replyTo?.id });
+      setReplyTo(null);
+      setTimeout(() => markRead(to), 1200);
+    }
+    e.target.value = "";
+  }
+
   function pickMention(username: string) {
     setText(text.replace(/@[a-zA-Z0-9_.]*$/, `@${username} `));
   }
+
+  const msgById = (id?: string) => (id ? active?.messages.find((m) => m.id === id) : undefined);
 
   return (
     <div className="mx-auto flex h-[calc(100vh-7rem)] max-w-4xl overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -158,27 +175,40 @@ export function Messages() {
           <div className="flex-1 space-y-2 overflow-y-auto bg-zinc-50 p-4 dark:bg-zinc-950/40">
             {active.messages.map((m) => {
               const mine = m.fromId === me;
+              const replied = msgById(m.replyToId);
               return (
                 <div key={m.id} className={cn("group flex items-center gap-1.5", mine ? "justify-end" : "justify-start")}>
                   {mine && (
-                    <button
-                      onClick={() => deleteMessage(active.userId, m.id)}
-                      title="Hapus pesan"
-                      className="rounded-full p-1 text-zinc-400 opacity-0 transition hover:text-red-500 group-hover:opacity-100"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex gap-0.5 opacity-0 transition group-hover:opacity-100">
+                      <button onClick={() => setReplyTo({ id: m.id, text: m.text || "📷 Foto", name: "kamu" })} title="Balas" className="rounded-full p-1 text-zinc-400 hover:text-fuchsia-600"><Reply size={14} /></button>
+                      <button onClick={() => deleteMessage(active.userId, m.id)} title="Hapus pesan" className="rounded-full p-1 text-zinc-400 hover:text-red-500"><Trash2 size={14} /></button>
+                    </div>
                   )}
-                  <div
-                    className={cn(
-                      "max-w-[75%] rounded-2xl px-4 py-2 text-[15px] shadow-sm",
-                      mine
-                        ? "rounded-br-md bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white"
-                        : "rounded-bl-md bg-white text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                  <div className={cn("max-w-[75%]", mine ? "items-end" : "items-start", "flex flex-col gap-0.5")}>
+                    <div
+                      className={cn(
+                        "overflow-hidden rounded-2xl text-[15px] shadow-sm",
+                        mine ? "rounded-br-md bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white" : "rounded-bl-md bg-white text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                      )}
+                    >
+                      {replied && (
+                        <div className={cn("mx-1 mt-1 rounded-lg px-2 py-1 text-xs", mine ? "bg-white/20" : "bg-zinc-100 dark:bg-zinc-700/60")}>
+                          <span className="font-semibold">{replied.fromId === me ? "Kamu" : user(replied.fromId).name}</span>
+                          <p className="truncate opacity-80">{replied.text || "📷 Foto"}</p>
+                        </div>
+                      )}
+                      {m.image && <img src={m.image} alt="" className="max-h-64 w-full object-cover" />}
+                      {m.text && <p className="px-4 py-2"><MentionText text={m.text} /></p>}
+                    </div>
+                    {mine && (
+                      <span className="flex items-center gap-0.5 pr-1 text-[10px] text-zinc-400">
+                        {timeAgo(m.createdAt)} {m.read ? <CheckCheck size={13} className="text-sky-500" /> : <Check size={13} />}
+                      </span>
                     )}
-                  >
-                    <MentionText text={m.text} />
                   </div>
+                  {!mine && (
+                    <button onClick={() => setReplyTo({ id: m.id, text: m.text || "📷 Foto", name: user(m.fromId).name })} title="Balas" className="rounded-full p-1 text-zinc-400 opacity-0 transition hover:text-fuchsia-600 group-hover:opacity-100"><Reply size={14} /></button>
+                  )}
                 </div>
               );
             })}
@@ -194,6 +224,15 @@ export function Messages() {
             <div ref={endRef} />
           </div>
 
+          {replyTo && (
+            <div className="flex items-center justify-between gap-2 border-t border-zinc-200 bg-zinc-50 px-4 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-800/50">
+              <div className="min-w-0">
+                <p className="font-semibold text-fuchsia-600 dark:text-fuchsia-400">Membalas {replyTo.name}</p>
+                <p className="truncate text-zinc-500">{replyTo.text}</p>
+              </div>
+              <button onClick={() => setReplyTo(null)} className="text-zinc-400"><X size={16} /></button>
+            </div>
+          )}
           <div className="relative flex items-center gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800">
             {mentionList.length > 0 && (
               <div className="absolute bottom-full left-3 mb-2 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
@@ -206,6 +245,10 @@ export function Messages() {
                 ))}
               </div>
             )}
+            <button onClick={() => fileRef.current?.click()} title="Kirim foto" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <ImagePlus size={20} />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={sendImage} />
             <div className="flex flex-1 items-center gap-1 rounded-full bg-zinc-100 px-3 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800">
               <input
                 value={text}
