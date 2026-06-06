@@ -1,6 +1,7 @@
 import type {
   Conversation,
   Group,
+  GroupChat,
   GroupPost,
   LiveStream,
   Post,
@@ -179,6 +180,20 @@ export const SEED_REVIEWS: Review[] = [
   { id: "rv3", productId: "pr2", userId: "u1", rating: 5, text: "Kameranya mulus, sesuai deskripsi. Recommended!", createdAt: now - 40 * hr },
   { id: "rv4", productId: "pr3", userId: "u5", rating: 5, text: "Tasnya cantik banget, bahan kokoh 😍", createdAt: now - 30 * hr },
   { id: "rv5", productId: "pr5", userId: "u2", rating: 4, text: "Ngetik jadi enak, switch-nya pas.", createdAt: now - 15 * hr },
+];
+
+export const SEED_GROUP_CHATS: GroupChat[] = [
+  {
+    id: "gc1",
+    name: "Tim Nongkrong ☕",
+    memberIds: ["u1", "u3", "u4"],
+    createdAt: now - 5 * hr,
+    messages: [
+      { id: "gm1", fromId: "u1", text: "Halo tim! Weekend ngopi yuk ☕", createdAt: now - 5 * hr },
+      { id: "gm2", fromId: "u3", text: "Gas! Tempat biasa?", createdAt: now - 4 * hr },
+      { id: "gm4", fromId: "u4", text: "Aku ikut, jangan lupa ajak yang lain 😄", createdAt: now - 3 * hr },
+    ],
+  },
 ];
 
 export const SEED_CONVERSATIONS: Conversation[] = [

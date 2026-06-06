@@ -2,15 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Archive, ArchiveRestore, ArrowLeft, Check, CheckCheck, ImagePlus, MapPin, Mic, Phone, Reply, Send, SmilePlus, Trash2, Video, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl, timeAgo } from "../lib/utils";
+import { Users } from "lucide-react";
 import { EmojiPicker } from "../components/EmojiPicker";
 import { MentionText } from "../components/MentionText";
 import { VideoCall } from "../components/VideoCall";
+import { GroupChatPanel } from "../components/GroupChatPanel";
+import { CreateGroupModal } from "../components/CreateGroupModal";
 
 const REPLIES = ["Oke siap! 👍", "Wah menarik 😄", "Hehe iya bener", "Mantap! 🔥", "Nanti aku kabari ya", "😂😂😂", "Setuju banget!", "Makasih ya 🙏", "Boleh, gas!", "Wkwk iya juga"];
 const REACTS = ["❤️", "😂", "👍", "😮", "😢", "🙏"];
 
 export function Messages() {
   const conversations = useStore((s) => s.conversations);
+  const groupChats = useStore((s) => s.groupChats);
   const user = useStore((s) => s.user);
   const users = useStore((s) => s.users);
   const me = useStore((s) => s.currentUserId);
@@ -28,7 +32,10 @@ export function Messages() {
     activeChatUserId ?? conversations[0]?.userId ?? null
   );
   const [showArchived, setShowArchived] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [text, setText] = useState("");
+  const activeGroup = groupChats.find((g) => g.id === activeGroupId) ?? null;
   const [typing, setTyping] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; text: string; name: string } | null>(null);
   const [reactingId, setReactingId] = useState<string | null>(null);
@@ -158,22 +165,49 @@ export function Messages() {
       <div
         className={cn(
           "w-full shrink-0 border-r border-zinc-200 dark:border-zinc-800 sm:w-72",
-          activeId && "hidden sm:block"
+          (activeId || activeGroupId) && "hidden sm:block"
         )}
       >
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <h2 className="text-lg font-bold">{showArchived ? "Arsip" : "Pesan"}</h2>
-          <button
-            onClick={() => setShowArchived((v) => !v)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition",
-              showArchived ? "bg-fuchsia-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-            )}
-          >
-            <Archive size={14} /> {showArchived ? "Aktif" : `Arsip${archived.length ? ` (${archived.length})` : ""}`}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setShowCreateGroup(true)} title="Buat grup" className="grid h-7 w-7 place-items-center rounded-full bg-fuchsia-600 text-white hover:bg-fuchsia-700"><Users size={14} /></button>
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition",
+                showArchived ? "bg-fuchsia-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+              )}
+            >
+              <Archive size={14} /> {showArchived ? "Aktif" : `Arsip${archived.length ? ` (${archived.length})` : ""}`}
+            </button>
+          </div>
         </div>
         <div className="overflow-y-auto">
+          {!showArchived && groupChats.map((g) => {
+            const last = g.messages[g.messages.length - 1];
+            return (
+              <div
+                key={g.id}
+                onClick={() => { setActiveGroupId(g.id); setActiveId(null); }}
+                className={cn(
+                  "flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800",
+                  activeGroupId === g.id && "bg-fuchsia-50 dark:bg-fuchsia-950/40"
+                )}
+              >
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-950 dark:text-fuchsia-400"><Users size={22} /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-sm font-semibold">{g.name}</p>
+                    {last && <span className="shrink-0 text-[11px] text-zinc-400">{timeAgo(last.createdAt)}</span>}
+                  </div>
+                  <p className="truncate text-sm text-zinc-500">
+                    {last ? `${last.fromId === me ? "Kamu" : user(last.fromId).name.split(" ")[0]}: ${last.text}` : `${g.memberIds.length + 1} anggota`}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
           {visible.length === 0 && (
             <p className="p-8 text-center text-sm text-zinc-400">{showArchived ? "Tidak ada chat diarsipkan." : "Tidak ada percakapan."}</p>
           )}
@@ -184,7 +218,7 @@ export function Messages() {
             return (
               <div
                 key={c.userId}
-                onClick={() => setActiveId(c.userId)}
+                onClick={() => { setActiveId(c.userId); setActiveGroupId(null); }}
                 className={cn(
                   "group flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800",
                   activeId === c.userId && "bg-fuchsia-50 dark:bg-fuchsia-950/40"
@@ -217,7 +251,9 @@ export function Messages() {
       </div>
 
       {/* panel chat */}
-      {active ? (
+      {activeGroup ? (
+        <GroupChatPanel group={activeGroup} onBack={() => setActiveGroupId(null)} />
+      ) : active ? (
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
             <button
@@ -386,6 +422,16 @@ export function Messages() {
       )}
 
       {callMode && active && <VideoCall user={user(active.userId)} mode={callMode} onEnd={() => setCallMode(null)} />}
+      {showCreateGroup && (
+        <CreateGroupModal
+          onClose={() => setShowCreateGroup(false)}
+          onCreated={() => {
+            setShowCreateGroup(false);
+            const g = useStore.getState().groupChats[0];
+            if (g) { setActiveGroupId(g.id); setActiveId(null); }
+          }}
+        />
+      )}
     </div>
   );
 }

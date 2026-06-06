@@ -6,6 +6,7 @@ import type {
   Conversation,
   Draft,
   Group,
+  GroupChat,
   GroupPost,
   LiveStream,
   Order,
@@ -27,6 +28,7 @@ import type {
 import {
   ME,
   SEED_CONVERSATIONS,
+  SEED_GROUP_CHATS,
   SEED_GROUP_POSTS,
   SEED_GROUPS,
   SEED_LIVES,
@@ -91,6 +93,10 @@ interface State {
   posts: Post[];
   stories: Story[];
   conversations: Conversation[];
+  groupChats: GroupChat[];
+  createGroupChat: (name: string, memberIds: string[]) => void;
+  sendGroupMessage: (groupId: string, text: string) => void;
+  receiveGroupMessage: (groupId: string, fromId: string, text: string) => void;
   liveStreams: LiveStream[];
   scheduledLives: ScheduledLive[];
   reminderIds: string[];
@@ -216,6 +222,7 @@ export const useStore = create<State>()(
       posts: SEED_POSTS,
       stories: SEED_STORIES,
       conversations: SEED_CONVERSATIONS,
+      groupChats: SEED_GROUP_CHATS,
       liveStreams: SEED_LIVES,
       scheduledLives: SEED_SCHEDULED,
       reminderIds: [],
@@ -565,6 +572,32 @@ export const useStore = create<State>()(
           };
         }),
 
+      createGroupChat: (name, memberIds) =>
+        set((s) => ({
+          groupChats: [
+            { id: uid("gc"), name: name.trim() || "Grup baru", memberIds, messages: [], createdAt: Date.now() },
+            ...s.groupChats,
+          ],
+        })),
+
+      sendGroupMessage: (groupId, text) =>
+        set((s) => ({
+          groupChats: s.groupChats.map((g) =>
+            g.id === groupId
+              ? { ...g, messages: [...g.messages, { id: uid("gm"), fromId: s.currentUserId, text: text.trim(), createdAt: Date.now() }] }
+              : g
+          ),
+        })),
+
+      receiveGroupMessage: (groupId, fromId, text) =>
+        set((s) => ({
+          groupChats: s.groupChats.map((g) =>
+            g.id === groupId
+              ? { ...g, messages: [...g.messages, { id: uid("gm"), fromId, text, createdAt: Date.now() }] }
+              : g
+          ),
+        })),
+
       receiveMessage: (userId, text) =>
         set((s) => {
           const msg = { id: uid("m"), fromId: userId, text, createdAt: Date.now() };
@@ -787,6 +820,7 @@ export const useStore = create<State>()(
           posts: SEED_POSTS,
           stories: SEED_STORIES,
           conversations: SEED_CONVERSATIONS,
+          groupChats: SEED_GROUP_CHATS,
           liveStreams: SEED_LIVES,
           scheduledLives: SEED_SCHEDULED,
           reminderIds: [],

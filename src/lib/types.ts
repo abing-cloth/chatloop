@@ -80,6 +80,14 @@ export interface Conversation {
   messages: Message[];
 }
 
+export interface GroupChat {
+  id: string;
+  name: string;
+  memberIds: string[]; // anggota selain diri sendiri
+  messages: Message[];
+  createdAt: number;
+}
+
 export interface LiveStream {
   id: string;
   userId: string;
