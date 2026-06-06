@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, VideoOff, X } from "lucide-react";
+import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import type { LiveStream } from "../lib/types";
@@ -17,8 +17,10 @@ const CHATTER = [
 
 const FILTERS = [
   { key: "normal", label: "Normal", css: "none" },
-  { key: "cerah", label: "Cerah", css: "brightness(1.12) contrast(1.05) saturate(1.18)" },
-  { key: "mulus", label: "Mulus", css: "brightness(1.1) saturate(1.1) contrast(1.02) blur(0.6px)" },
+  { key: "cerah", label: "Cerah", css: "brightness(1.14) contrast(1.04) saturate(1.15)" },
+  { key: "putih", label: "Putih", css: "brightness(1.28) contrast(0.9) saturate(0.92)" },
+  { key: "mulus", label: "Mulus", css: "brightness(1.12) saturate(1.08) contrast(1.02) blur(1px)" },
+  { key: "cantik", label: "Cantik", css: "brightness(1.2) saturate(1.18) contrast(1.02) sepia(0.12)" },
   { key: "vivid", label: "Vivid", css: "saturate(1.6) contrast(1.12)" },
   { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)" },
   { key: "sepia", label: "Sepia", css: "sepia(0.7)" },
@@ -70,6 +72,7 @@ export function LiveRoom({
   const [efekTab, setEfekTab] = useState<"filter" | "wajah">("filter");
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
+  const [facing, setFacing] = useState<"user" | "environment">("user");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -82,11 +85,11 @@ export function LiveRoom({
   useEffect(() => {
     if (mode !== "host") return;
     let media: MediaStream | null = null;
-    navigator.mediaDevices?.getUserMedia({ video: true, audio: false })
-      .then((s) => { media = s; if (videoRef.current) videoRef.current.srcObject = s; })
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: facing }, audio: false })
+      .then((s) => { media = s; if (videoRef.current) videoRef.current.srcObject = s; setCamError(false); })
       .catch(() => setCamError(true));
     return () => media?.getTracks().forEach((t) => t.stop());
-  }, [mode]);
+  }, [mode, facing]);
 
   useEffect(() => {
     const c = setInterval(() => {
@@ -142,7 +145,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" style={{ filter: filterCss }} />
+            <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" style={{ filter: filterCss, transform: facing === "user" ? "scaleX(-1)" : "none" }} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -200,9 +203,14 @@ export function LiveRoom({
         )}
 
         {mode === "host" && (
-          <button onClick={onClose} className="absolute right-3 top-28 flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-700 active:scale-95">
-            <Power size={16} /> Akhiri Siaran
-          </button>
+          <>
+            <button onClick={onClose} className="absolute right-3 top-28 flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-700 active:scale-95">
+              <Power size={16} /> Akhiri Siaran
+            </button>
+            <button onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))} title="Ganti kamera" className="absolute right-3 top-40 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur hover:bg-black/60">
+              <SwitchCamera size={20} />
+            </button>
+          </>
         )}
 
         {/* komentar */}

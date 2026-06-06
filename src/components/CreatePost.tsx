@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { FileText, ImagePlus, Send, Trash2, X } from "lucide-react";
+import { Camera, FileText, ImagePlus, Send, Trash2, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { fileToDataUrl, timeAgo } from "../lib/utils";
 import { useT } from "../lib/i18n";
 import { EmojiPicker } from "./EmojiPicker";
+import { CameraCapture } from "./CameraCapture";
 
 export function CreatePost() {
   const me = useStore((s) => s.me());
@@ -17,6 +18,7 @@ export function CreatePost() {
   const [image, setImage] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const canPost = text.trim().length > 0 || image;
@@ -67,6 +69,9 @@ export function CreatePost() {
           <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40">
             <ImagePlus size={18} /> {tr("post.photo")}
           </button>
+          <button onClick={() => setShowCamera(true)} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40">
+            <Camera size={18} /> Kamera
+          </button>
           <div className="rounded-lg px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800">
             <EmojiPicker onPick={(e) => setText((t) => t + e)} />
           </div>
@@ -85,6 +90,13 @@ export function CreatePost() {
           {tr("post.send")} <Send size={15} />
         </button>
       </div>
+
+      {showCamera && (
+        <CameraCapture
+          onClose={() => setShowCamera(false)}
+          onCapture={(d) => { setImage(d); setShowCamera(false); }}
+        />
+      )}
 
       {/* daftar draf tersimpan */}
       {drafts.length > 0 && (
