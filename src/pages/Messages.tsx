@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Send } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
 import { EmojiPicker } from "../components/EmojiPicker";
@@ -11,12 +11,19 @@ export function Messages() {
   const sendMessage = useStore((s) => s.sendMessage);
   const activeChatUserId = useStore((s) => s.activeChatUserId);
   const clearActiveChat = useStore((s) => s.clearActiveChat);
+  const archived = useStore((s) => s.archivedChatIds);
+  const toggleArchive = useStore((s) => s.toggleArchiveChat);
 
   const [activeId, setActiveId] = useState<string | null>(
     activeChatUserId ?? conversations[0]?.userId ?? null
   );
+  const [showArchived, setShowArchived] = useState(false);
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+
+  const visible = conversations.filter((c) =>
+    showArchived ? archived.includes(c.userId) : !archived.includes(c.userId)
+  );
 
   const active = conversations.find((c) => c.userId === activeId);
 
@@ -47,19 +54,32 @@ export function Messages() {
           activeId && "hidden sm:block"
         )}
       >
-        <div className="border-b border-zinc-200 px-4 py-3.5 dark:border-zinc-800">
-          <h2 className="text-lg font-bold">Pesan</h2>
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+          <h2 className="text-lg font-bold">{showArchived ? "Arsip" : "Pesan"}</h2>
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition",
+              showArchived ? "bg-fuchsia-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+            )}
+          >
+            <Archive size={14} /> {showArchived ? "Aktif" : `Arsip${archived.length ? ` (${archived.length})` : ""}`}
+          </button>
         </div>
         <div className="overflow-y-auto">
-          {conversations.map((c) => {
+          {visible.length === 0 && (
+            <p className="p-8 text-center text-sm text-zinc-400">{showArchived ? "Tidak ada chat diarsipkan." : "Tidak ada percakapan."}</p>
+          )}
+          {visible.map((c) => {
             const u = user(c.userId);
             const last = c.messages[c.messages.length - 1];
+            const isArchived = archived.includes(c.userId);
             return (
-              <button
+              <div
                 key={c.userId}
                 onClick={() => setActiveId(c.userId)}
                 className={cn(
-                  "flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800",
+                  "group flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800",
                   activeId === c.userId && "bg-fuchsia-50 dark:bg-fuchsia-950/40"
                 )}
               >
@@ -67,17 +87,20 @@ export function Messages() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate text-sm font-semibold">{u.name}</p>
-                    {last && (
-                      <span className="shrink-0 text-[11px] text-zinc-400">
-                        {timeAgo(last.createdAt)}
-                      </span>
-                    )}
+                    {last && <span className="shrink-0 text-[11px] text-zinc-400">{timeAgo(last.createdAt)}</span>}
                   </div>
                   <p className="truncate text-sm text-zinc-500">
                     {last ? (last.fromId === me ? `Kamu: ${last.text}` : last.text) : ""}
                   </p>
                 </div>
-              </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleArchive(c.userId); }}
+                  title={isArchived ? "Keluarkan dari arsip" : "Arsipkan"}
+                  className="rounded-full p-1.5 text-zinc-400 opacity-0 transition hover:bg-zinc-200 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-zinc-700"
+                >
+                  {isArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                </button>
+              </div>
             );
           })}
         </div>

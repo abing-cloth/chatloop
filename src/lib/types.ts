@@ -35,6 +35,7 @@ export interface Comment {
   text: string;
   createdAt: number;
   parentId?: string; // untuk balasan komentar
+  likedBy?: string[];
 }
 
 export interface Post {

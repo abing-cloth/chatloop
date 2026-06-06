@@ -16,6 +16,7 @@ import { cn, timeAgo } from "../lib/utils";
 import { useT } from "../lib/i18n";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { EmojiPicker } from "./EmojiPicker";
+import { MentionText } from "./MentionText";
 import type { Comment, Post } from "../lib/types";
 
 export function PostCard({ post }: { post: Post }) {
@@ -27,6 +28,8 @@ export function PostCard({ post }: { post: Post }) {
   const editPost = useStore((s) => s.editPost);
   const editComment = useStore((s) => s.editComment);
   const deleteComment = useStore((s) => s.deleteComment);
+  const toggleCommentLike = useStore((s) => s.toggleCommentLike);
+  const users = useStore((s) => s.users);
   const toggleSave = useStore((s) => s.toggleSave);
   const saved = useStore((s) => s.savedPostIds.includes(post.id));
   const openProfile = useStore((s) => s.openProfile);
@@ -58,6 +61,20 @@ export function PostCard({ post }: { post: Post }) {
     setEditingPost(false);
   }
 
+  const mentionMatch = comment.match(/@([a-zA-Z0-9_.]*)$/);
+  const mentionList = mentionMatch
+    ? users
+        .filter((u) => u.id !== me)
+        .filter((u) => {
+          const q = mentionMatch[1].toLowerCase();
+          return u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+        })
+        .slice(0, 5)
+    : [];
+  function pickMention(username: string) {
+    setComment(comment.replace(/@[a-zA-Z0-9_.]*$/, `@${username} `));
+  }
+
   function CommentItem({ c, reply = false }: { c: Comment; reply?: boolean }) {
     const cu = user(c.userId);
     const canEdit = c.userId === me;
@@ -86,11 +103,14 @@ export function PostCard({ post }: { post: Post }) {
                 <button onClick={() => setEditingC(null)} className="text-zinc-400"><X size={16} /></button>
               </div>
             ) : (
-              <p className="text-sm text-zinc-700 dark:text-zinc-200">{c.text}</p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-200"><MentionText text={c.text} /></p>
             )}
           </div>
           <div className="mt-0.5 flex items-center gap-3 pl-2 text-[11px] text-zinc-400">
             <span>{timeAgo(c.createdAt)}</span>
+            <button onClick={() => toggleCommentLike(post.id, c.id)} className={cn("flex items-center gap-1 font-semibold", (c.likedBy ?? []).includes(me) ? "text-red-500" : "hover:text-zinc-600 dark:hover:text-zinc-300")}>
+              <Heart size={12} className={(c.likedBy ?? []).includes(me) ? "fill-red-500" : ""} /> {(c.likedBy ?? []).length || ""}
+            </button>
             {!reply && (
               <button onClick={() => { setReplyTo({ id: c.id, name: cu.name }); }} className="font-semibold hover:text-zinc-600 dark:hover:text-zinc-300">{tr("act.reply")}</button>
             )}
@@ -187,7 +207,19 @@ export function PostCard({ post }: { post: Post }) {
             </div>
           )}
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="relative mt-3 flex items-center gap-2">
+            {/* saran @mention */}
+            {mentionList.length > 0 && (
+              <div className="absolute bottom-full left-0 mb-2 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
+                {mentionList.map((u) => (
+                  <button key={u.id} onClick={() => pickMention(u.username)} className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <img src={u.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                    <span className="flex items-center gap-1 text-sm font-medium">{u.name} {u.verified && <VerifiedBadge size={11} />}</span>
+                    <span className="ml-auto text-xs text-zinc-400">@{u.username}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex flex-1 items-center gap-1 rounded-full bg-white px-3 ring-1 ring-zinc-200 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800 dark:ring-zinc-700">
               <input value={comment} onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendComment()} placeholder={tr("act.commentPlaceholder")} className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" />
               <EmojiPicker onPick={(e) => setComment((c) => c + e)} />

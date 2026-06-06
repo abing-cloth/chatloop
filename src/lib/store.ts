@@ -134,6 +134,8 @@ interface State {
 
   toggleTheme: () => void;
   sendMessage: (userId: string, text: string) => void;
+  archivedChatIds: string[];
+  toggleArchiveChat: (userId: string) => void;
   activeChatUserId: string | null;
   startChat: (userId: string) => void;
   clearActiveChat: () => void;
@@ -189,6 +191,7 @@ interface State {
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
   addComment: (postId: string, text: string, parentId?: string) => void;
+  toggleCommentLike: (postId: string, commentId: string) => void;
 
   markStorySeen: (id: string) => void;
   updateProfile: (data: Partial<Pick<User, "bio" | "avatar" | "username" | "cover">>) => void;
@@ -221,6 +224,7 @@ export const useStore = create<State>()(
       walletBalance: SEED_WALLET_BALANCE,
       walletTx: SEED_WALLET_TX,
       activeChatUserId: null,
+      archivedChatIds: [],
       theme: "light",
       savedPostIds: [],
       followingIds: [],
@@ -596,6 +600,7 @@ export const useStore = create<State>()(
             text: text.trim(),
             createdAt: Date.now(),
             parentId,
+            likedBy: [],
           };
           return {
             posts: s.posts.map((p) =>
@@ -603,6 +608,35 @@ export const useStore = create<State>()(
             ),
           };
         }),
+
+      toggleCommentLike: (postId, commentId) =>
+        set((s) => ({
+          posts: s.posts.map((p) =>
+            p.id !== postId
+              ? p
+              : {
+                  ...p,
+                  comments: p.comments.map((c) => {
+                    if (c.id !== commentId) return c;
+                    const likes = c.likedBy ?? [];
+                    const liked = likes.includes(s.currentUserId);
+                    return {
+                      ...c,
+                      likedBy: liked
+                        ? likes.filter((id) => id !== s.currentUserId)
+                        : [...likes, s.currentUserId],
+                    };
+                  }),
+                }
+          ),
+        })),
+
+      toggleArchiveChat: (userId) =>
+        set((s) => ({
+          archivedChatIds: s.archivedChatIds.includes(userId)
+            ? s.archivedChatIds.filter((id) => id !== userId)
+            : [userId, ...s.archivedChatIds],
+        })),
 
       editPost: (postId, text) =>
         set((s) => ({
@@ -696,6 +730,7 @@ export const useStore = create<State>()(
           walletBalance: SEED_WALLET_BALANCE,
           walletTx: SEED_WALLET_TX,
           activeChatUserId: null,
+          archivedChatIds: [],
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],
