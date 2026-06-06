@@ -2,7 +2,7 @@
 
 Aplikasi media sosial & chat ala **Facebook / Instagram**. Dibuat dengan React 19 + Vite 7 + TypeScript + TailwindCSS 4 + Zustand. Data tersimpan otomatis di `localStorage` browser — **tidak perlu backend / server**.
 
-**Logo:** gelembung chat berisi dua cincin saling mengait — melambangkan percakapan dua arah yang terus berputar (loop).
+**Logo:** gelembung chat berisi satu loop ∞ (infinity) — wadah chat yang universal + simbol "loop" yang menerus, melambangkan percakapan yang terus berputar tanpa henti.
 
 ### 🎨 Aset brand (`public/`)
 | File | Penggunaan |
@@ -47,18 +47,46 @@ Buka alamat yang ditampilkan (biasanya http://localhost:5173).
 ## 🏗️ Build produksi
 
 ```bash
-npm run build
-npm run preview
+npm run build      # gabungkan semua kode jadi bundle teroptimasi di dist/
+npm run preview    # uji hasil build (PWA aktif di sini)
+```
+
+## 🚀 Deploy online
+
+Folder `dist/` adalah situs statis — bisa di-host gratis. Konfigurasi untuk 3 platform sudah disiapkan:
+
+### Opsi 1 — Vercel (paling cepat)
+1. Push repo ini ke GitHub.
+2. Buka [vercel.com](https://vercel.com) → **Add New → Project** → pilih repo.
+3. Vercel otomatis pakai [`vercel.json`](vercel.json) (framework Vite terdeteksi). Klik **Deploy**.
+
+### Opsi 2 — Netlify
+1. Push repo ke GitHub.
+2. Buka [netlify.com](https://netlify.com) → **Add new site → Import** → pilih repo.
+3. Pengaturan build otomatis dari [`netlify.toml`](netlify.toml). Klik **Deploy**.
+
+> Tanpa GitHub: jalankan `npm run build`, lalu **drag-and-drop** folder `dist/` ke [app.netlify.com/drop](https://app.netlify.com/drop).
+
+### Opsi 3 — GitHub Pages (otomatis via Actions)
+1. Buat repo di GitHub & push (lihat di bawah).
+2. Di repo → **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) jalan otomatis tiap `push` ke `main`.
+   Situs terbit di `https://<username>.github.io/<repo>/` (base path diatur otomatis).
+
+```bash
+# push pertama ke GitHub
+git remote add origin https://github.com/<username>/<repo>.git
+git push -u origin main
 ```
 
 ## 📁 Struktur
 
 ```
 src/
-  components/   # Avatar, TopBar, Sidebar, RightBar, Stories, CreatePost, PostCard
-  pages/        # Feed, Profile
+  components/   # TopBar, Sidebar, RightBar, MobileNav, Stories, CreatePost, PostCard, Splash, Avatar
+  pages/        # Auth, Feed, Explore, Messages, Notifications, Saved, Profile, Settings
   lib/          # store (Zustand), types, seed data, utils
-  App.tsx       # navigasi (Beranda / Profil)
+  App.tsx       # splash → auth → navigasi antar halaman
 ```
 
 ## 🔌 Lanjut ke server sungguhan
