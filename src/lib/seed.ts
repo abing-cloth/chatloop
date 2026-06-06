@@ -3,6 +3,7 @@ import type {
   LiveStream,
   Post,
   Product,
+  Review,
   ScheduledLive,
   Story,
   User,
@@ -126,6 +127,14 @@ export const SEED_PRODUCTS: Product[] = [
   { id: "pr6", sellerId: "u1", name: "Lilin Aromaterapi Lavender", price: 55000, image: img("prod-candle", 600, 600), description: "Lilin soy wax aroma lavender, tahan 30+ jam. Bikin rileks.", category: "Rumah Tangga", createdAt: now - 40 * hr },
   { id: "pr7", sellerId: "u3", name: "Serum Vitamin C 20ml", price: 98000, image: img("prod-serum", 600, 600), description: "Serum brightening vitamin C, mencerahkan & melembapkan kulit.", category: "Kecantikan", createdAt: now - 50 * hr },
   { id: "pr8", sellerId: "u2", name: "Tripod Kamera Aluminium", price: 230000, image: img("prod-tripod", 600, 600), description: "Tripod ringan tinggi 1,5m, max beban 5kg. Plus tas pembawa.", category: "Elektronik", createdAt: now - 60 * hr },
+];
+
+export const SEED_REVIEWS: Review[] = [
+  { id: "rv1", productId: "pr1", userId: "u3", rating: 5, text: "Kopinya wangi & nikmat, pengiriman cepat!", createdAt: now - 20 * hr },
+  { id: "rv2", productId: "pr1", userId: "u4", rating: 4, text: "Enak, cuma kemasan agak penyok. Overall mantap.", createdAt: now - 10 * hr },
+  { id: "rv3", productId: "pr2", userId: "u1", rating: 5, text: "Kameranya mulus, sesuai deskripsi. Recommended!", createdAt: now - 40 * hr },
+  { id: "rv4", productId: "pr3", userId: "u5", rating: 5, text: "Tasnya cantik banget, bahan kokoh 😍", createdAt: now - 30 * hr },
+  { id: "rv5", productId: "pr5", userId: "u2", rating: 4, text: "Ngetik jadi enak, switch-nya pas.", createdAt: now - 15 * hr },
 ];
 
 export const SEED_CONVERSATIONS: Conversation[] = [

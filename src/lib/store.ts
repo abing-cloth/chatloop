@@ -7,8 +7,10 @@ import type {
   LiveStream,
   Order,
   OrderStatus,
+  PaymentMethod,
   Post,
   Product,
+  Review,
   ScheduledLive,
   ShippingAddress,
   Story,
@@ -21,6 +23,7 @@ import {
   SEED_LIVES,
   SEED_POSTS,
   SEED_PRODUCTS,
+  SEED_REVIEWS,
   SEED_SCHEDULED,
   SEED_STORIES,
   SEED_USERS,
@@ -70,6 +73,7 @@ interface State {
   products: Product[];
   cart: CartItem[];
   orders: Order[];
+  reviews: Review[];
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
@@ -112,10 +116,12 @@ interface State {
   setQty: (productId: string, qty: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
-  checkout: (address: ShippingAddress) => void;
+  checkout: (address: ShippingAddress, payment: PaymentMethod) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   cartCount: () => number;
   cartTotal: () => number;
+  addReview: (data: { productId: string; rating: number; text: string }) => void;
+  productRating: (productId: string) => { avg: number; count: number };
 
   addPost: (text: string, image?: string) => void;
   deletePost: (id: string) => void;
@@ -141,6 +147,7 @@ export const useStore = create<State>()(
       products: SEED_PRODUCTS,
       cart: [],
       orders: [],
+      reviews: SEED_REVIEWS,
       activeChatUserId: null,
       theme: "light",
       savedPostIds: [],
@@ -260,7 +267,7 @@ export const useStore = create<State>()(
 
       clearCart: () => set({ cart: [] }),
 
-      checkout: (address) =>
+      checkout: (address, payment) =>
         set((s) => {
           const items = s.cart
             .map((c) => {
@@ -277,6 +284,7 @@ export const useStore = create<State>()(
             createdAt: Date.now(),
             address,
             status: "dikemas",
+            payment,
           };
           return { orders: [order, ...s.orders], cart: [] };
         }),
@@ -285,6 +293,28 @@ export const useStore = create<State>()(
         set((s) => ({
           orders: s.orders.map((o) => (o.id === orderId ? { ...o, status } : o)),
         })),
+
+      addReview: ({ productId, rating, text }) =>
+        set((s) => ({
+          reviews: [
+            {
+              id: uid("rv"),
+              productId,
+              userId: s.currentUserId,
+              rating,
+              text: text.trim(),
+              createdAt: Date.now(),
+            },
+            ...s.reviews,
+          ],
+        })),
+
+      productRating: (productId) => {
+        const rs = get().reviews.filter((r) => r.productId === productId);
+        if (rs.length === 0) return { avg: 0, count: 0 };
+        const avg = rs.reduce((n, r) => n + r.rating, 0) / rs.length;
+        return { avg, count: rs.length };
+      },
 
       cartCount: () => get().cart.reduce((n, c) => n + c.qty, 0),
 
@@ -397,6 +427,7 @@ export const useStore = create<State>()(
           products: SEED_PRODUCTS,
           cart: [],
           orders: [],
+          reviews: SEED_REVIEWS,
           activeChatUserId: null,
           theme: s.theme,
           savedPostIds: [],

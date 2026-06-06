@@ -1,18 +1,28 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  Banknote,
   CheckCircle2,
+  CreditCard,
   MapPin,
   Minus,
   Plus,
   ShoppingCart,
   Trash2,
+  Wallet,
   X,
 } from "lucide-react";
 import { useStore } from "../lib/store";
-import { formatRupiah } from "../lib/utils";
+import { cn, formatRupiah } from "../lib/utils";
+import type { PaymentMethod } from "../lib/types";
 
 type Step = "cart" | "address" | "done";
+
+const PAYMENTS: { id: PaymentMethod; label: string; desc: string; icon: typeof Wallet }[] = [
+  { id: "transfer", label: "Transfer Bank", desc: "BCA, BNI, Mandiri, dll", icon: CreditCard },
+  { id: "ewallet", label: "E-Wallet", desc: "GoPay, OVO, DANA, ShopeePay", icon: Wallet },
+  { id: "cod", label: "Bayar di Tempat (COD)", desc: "Bayar tunai saat barang tiba", icon: Banknote },
+];
 
 export function CartDrawer({
   open,
@@ -35,6 +45,7 @@ export function CartDrawer({
   const [name, setName] = useState(me.name);
   const [phone, setPhone] = useState(me.phone ?? "");
   const [address, setAddress] = useState("");
+  const [payment, setPayment] = useState<PaymentMethod>("transfer");
   const [error, setError] = useState("");
 
   const items = cart
@@ -55,7 +66,7 @@ export function CartDrawer({
     if (!name.trim()) return setError("Nama penerima wajib diisi.");
     if (phone.replace(/\D/g, "").length < 6) return setError("Nomor telepon tidak valid.");
     if (!address.trim()) return setError("Alamat pengiriman wajib diisi.");
-    checkout({ name: name.trim(), phone: phone.trim(), address: address.trim() });
+    checkout({ name: name.trim(), phone: phone.trim(), address: address.trim() }, payment);
     setStep("done");
   }
 
@@ -184,6 +195,37 @@ export function CartDrawer({
                 placeholder="Alamat lengkap (jalan, no rumah, kota, kode pos)"
                 className="w-full resize-none rounded-xl bg-zinc-100 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-fuchsia-300 dark:bg-zinc-800"
               />
+
+              <div className="flex items-center gap-2 pt-1 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                <Wallet size={16} className="text-fuchsia-600" /> Metode pembayaran
+              </div>
+              {PAYMENTS.map((pm) => (
+                <button
+                  key={pm.id}
+                  onClick={() => setPayment(pm.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition",
+                    payment === pm.id
+                      ? "border-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/30"
+                      : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
+                  )}
+                >
+                  <pm.icon size={20} className={payment === pm.id ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-zinc-500"} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{pm.label}</p>
+                    <p className="text-xs text-zinc-500">{pm.desc}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "grid h-5 w-5 place-items-center rounded-full border-2",
+                      payment === pm.id ? "border-fuchsia-600" : "border-zinc-300 dark:border-zinc-600"
+                    )}
+                  >
+                    {payment === pm.id && <span className="h-2.5 w-2.5 rounded-full bg-fuchsia-600" />}
+                  </span>
+                </button>
+              ))}
+
               {error && <p className="text-sm text-red-500">{error}</p>}
 
               <div className="rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">

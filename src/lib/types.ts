@@ -96,6 +96,8 @@ export interface ShippingAddress {
 
 export type OrderStatus = "dikemas" | "dikirim" | "selesai";
 
+export type PaymentMethod = "transfer" | "ewallet" | "cod";
+
 export interface Order {
   id: string;
   items: OrderItem[];
@@ -103,6 +105,16 @@ export interface Order {
   createdAt: number;
   address: ShippingAddress;
   status: OrderStatus;
+  payment: PaymentMethod;
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number; // 1-5
+  text: string;
+  createdAt: number;
 }
 
 export type Theme = "light" | "dark";

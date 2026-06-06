@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import { ImagePlus, MessageCircle, Package, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { PRODUCT_CATEGORIES } from "../lib/seed";
-import { cn, fileToDataUrl, formatRupiah } from "../lib/utils";
+import { cn, fileToDataUrl, formatRupiah, timeAgo } from "../lib/utils";
 import { VerifiedBadge } from "../components/VerifiedBadge";
+import { Stars, StarInput } from "../components/Stars";
 import type { Product } from "../lib/types";
 import type { View } from "../components/Sidebar";
 
@@ -21,6 +22,12 @@ export function Shop({
   const deleteProduct = useStore((s) => s.deleteProduct);
   const startChat = useStore((s) => s.startChat);
   const cartCount = useStore((s) => s.cartCount());
+  const reviews = useStore((s) => s.reviews);
+
+  const ratingFor = (productId: string) => {
+    const rs = reviews.filter((r) => r.productId === productId);
+    return { avg: rs.length ? rs.reduce((n, r) => n + r.rating, 0) / rs.length : 0, count: rs.length };
+  };
 
   const [cat, setCat] = useState("Semua");
   const [query, setQuery] = useState("");
@@ -123,6 +130,12 @@ export function Shop({
                     <p className="mt-1 font-bold text-fuchsia-600 dark:text-fuchsia-400">
                       {formatRupiah(p.price)}
                     </p>
+                    {ratingFor(p.id).count > 0 && (
+                      <div className="mt-1 flex items-center gap-1">
+                        <Stars value={ratingFor(p.id).avg} size={12} />
+                        <span className="text-[11px] text-zinc-400">({ratingFor(p.id).count})</span>
+                      </div>
+                    )}
                     <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
                       <img src={seller.avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
                       <span className="truncate">{seller.name}</span>
@@ -223,6 +236,8 @@ export function Shop({
                   </>
                 )}
               </div>
+
+              <Reviews productId={detail.id} canReview={detail.sellerId !== me} />
             </div>
           </div>
         </div>
@@ -230,6 +245,93 @@ export function Shop({
 
       {/* form jual */}
       {selling && <SellForm onClose={() => setSelling(false)} />}
+    </div>
+  );
+}
+
+function Reviews({ productId, canReview }: { productId: string; canReview: boolean }) {
+  const reviews = useStore((s) => s.reviews.filter((r) => r.productId === productId));
+  const user = useStore((s) => s.user);
+  const addReview = useStore((s) => s.addReview);
+  const me = useStore((s) => s.currentUserId);
+
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const avg = reviews.length ? reviews.reduce((n, r) => n + r.rating, 0) / reviews.length : 0;
+  const alreadyReviewed = reviews.some((r) => r.userId === me);
+
+  function submit() {
+    if (!text.trim()) return;
+    addReview({ productId, rating, text });
+    setText("");
+    setRating(5);
+    setOpen(false);
+  }
+
+  return (
+    <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-bold">Ulasan ({reviews.length})</h4>
+        {reviews.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Stars value={avg} size={15} />
+            <span className="text-sm font-semibold">{avg.toFixed(1)}</span>
+          </div>
+        )}
+      </div>
+
+      {canReview && !alreadyReviewed && (
+        <div className="mt-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
+          {open ? (
+            <>
+              <StarInput value={rating} onChange={setRating} size={26} />
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={2}
+                placeholder="Bagikan pengalamanmu dengan produk ini..."
+                className="mt-2 w-full resize-none rounded-lg bg-white px-3 py-2 text-sm outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-fuchsia-300 dark:bg-zinc-900 dark:ring-zinc-700"
+              />
+              <div className="mt-2 flex gap-2">
+                <button onClick={submit} disabled={!text.trim()} className="rounded-full bg-fuchsia-600 px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40">
+                  Kirim Ulasan
+                </button>
+                <button onClick={() => setOpen(false)} className="rounded-full bg-zinc-200 px-4 py-1.5 text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                  Batal
+                </button>
+              </div>
+            </>
+          ) : (
+            <button onClick={() => setOpen(true)} className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+              ⭐ Tulis ulasan
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3 space-y-3">
+        {reviews.length === 0 && (
+          <p className="py-2 text-center text-sm text-zinc-400">Belum ada ulasan. Jadi yang pertama!</p>
+        )}
+        {reviews.map((r) => {
+          const u = user(r.userId);
+          return (
+            <div key={r.id} className="flex gap-2.5">
+              <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{u.name}</span>
+                  <span className="text-xs text-zinc-400">{timeAgo(r.createdAt)}</span>
+                </div>
+                <Stars value={r.rating} size={12} />
+                <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-300">{r.text}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
