@@ -7,6 +7,7 @@ export interface User {
   verified?: boolean;
   phone?: string;
   email?: string;
+  cover?: string; // foto sampul
   followers?: number; // jumlah pengikut (baseline)
   following?: number; // jumlah yang diikuti (baseline)
 }

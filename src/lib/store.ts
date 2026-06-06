@@ -172,7 +172,9 @@ interface State {
   addComment: (postId: string, text: string) => void;
 
   markStorySeen: (id: string) => void;
-  updateProfile: (data: Partial<Pick<User, "name" | "bio" | "avatar">>) => void;
+  updateProfile: (data: Partial<Pick<User, "bio" | "avatar" | "username" | "cover">>) => void;
+  lastNameChange: number | null;
+  tryRename: (name: string) => { ok: boolean; msg: string };
   resetAll: () => void;
 }
 
@@ -594,6 +596,30 @@ export const useStore = create<State>()(
             u.id === s.currentUserId ? { ...u, ...data } : u
           ),
         })),
+
+      lastNameChange: null,
+
+      tryRename: (name) => {
+        const clean = name.trim();
+        const cur = get().me();
+        if (!clean) return { ok: false, msg: "Nama tidak boleh kosong." };
+        if (clean === cur.name) return { ok: true, msg: "" };
+        const COOLDOWN = 30 * 24 * 60 * 60 * 1000; // 30 hari
+        const last = get().lastNameChange;
+        if (last && Date.now() - last < COOLDOWN) {
+          const next = new Date(last + COOLDOWN).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+          return { ok: false, msg: `Nama hanya bisa diganti 1× per 30 hari. Bisa diganti lagi pada ${next}.` };
+        }
+        set((s) => ({
+          users: s.users.map((u) => (u.id === s.currentUserId ? { ...u, name: clean } : u)),
+          lastNameChange: Date.now(),
+        }));
+        return { ok: true, msg: "Nama berhasil diganti." };
+      },
 
       resetAll: () =>
         set((s) => ({
