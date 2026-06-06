@@ -88,11 +88,21 @@ export interface OrderItem {
   qty: number;
 }
 
+export interface ShippingAddress {
+  name: string;
+  phone: string;
+  address: string;
+}
+
+export type OrderStatus = "dikemas" | "dikirim" | "selesai";
+
 export interface Order {
   id: string;
   items: OrderItem[];
   total: number;
   createdAt: number;
+  address: ShippingAddress;
+  status: OrderStatus;
 }
 
 export type Theme = "light" | "dark";

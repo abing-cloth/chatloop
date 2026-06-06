@@ -8,14 +8,24 @@ export function Messages() {
   const user = useStore((s) => s.user);
   const me = useStore((s) => s.currentUserId);
   const sendMessage = useStore((s) => s.sendMessage);
+  const activeChatUserId = useStore((s) => s.activeChatUserId);
+  const clearActiveChat = useStore((s) => s.clearActiveChat);
 
   const [activeId, setActiveId] = useState<string | null>(
-    conversations[0]?.userId ?? null
+    activeChatUserId ?? conversations[0]?.userId ?? null
   );
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   const active = conversations.find((c) => c.userId === activeId);
+
+  // buka percakapan yang diminta dari luar (mis. "Hubungi Penjual")
+  useEffect(() => {
+    if (activeChatUserId) {
+      setActiveId(activeChatUserId);
+      clearActiveChat();
+    }
+  }, [activeChatUserId, clearActiveChat]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });

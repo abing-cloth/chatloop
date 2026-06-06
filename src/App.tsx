@@ -12,6 +12,7 @@ import { Saved } from "./pages/Saved";
 import { Settings } from "./pages/Settings";
 import { Live } from "./pages/Live";
 import { Shop } from "./pages/Shop";
+import { Orders } from "./pages/Orders";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
@@ -72,7 +73,8 @@ export default function App() {
             {view === "feed" && <Feed />}
             {view === "explore" && <Explore />}
             {view === "live" && <Live />}
-            {view === "shop" && <Shop onOpenCart={() => setCartOpen(true)} />}
+            {view === "shop" && <Shop onOpenCart={() => setCartOpen(true)} onNavigate={setView} />}
+            {view === "orders" && <Orders />}
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}
@@ -83,7 +85,11 @@ export default function App() {
         {view === "feed" && <RightBar />}
       </div>
       <MobileNav view={view} onNavigate={setView} />
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        onViewOrders={() => setView("orders")}
+      />
     </div>
   );
 }

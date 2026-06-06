@@ -6,9 +6,11 @@ import type {
   Conversation,
   LiveStream,
   Order,
+  OrderStatus,
   Post,
   Product,
   ScheduledLive,
+  ShippingAddress,
   Story,
   Theme,
   User,
@@ -90,6 +92,9 @@ interface State {
 
   toggleTheme: () => void;
   sendMessage: (userId: string, text: string) => void;
+  activeChatUserId: string | null;
+  startChat: (userId: string) => void;
+  clearActiveChat: () => void;
   toggleSave: (postId: string) => void;
   toggleFollow: (userId: string) => void;
   toggleReminder: (scheduledId: string) => void;
@@ -107,7 +112,8 @@ interface State {
   setQty: (productId: string, qty: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
-  checkout: () => void;
+  checkout: (address: ShippingAddress) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   cartCount: () => number;
   cartTotal: () => number;
 
@@ -135,6 +141,7 @@ export const useStore = create<State>()(
       products: SEED_PRODUCTS,
       cart: [],
       orders: [],
+      activeChatUserId: null,
       theme: "light",
       savedPostIds: [],
       followingIds: [],
@@ -253,7 +260,7 @@ export const useStore = create<State>()(
 
       clearCart: () => set({ cart: [] }),
 
-      checkout: () =>
+      checkout: (address) =>
         set((s) => {
           const items = s.cart
             .map((c) => {
@@ -263,9 +270,21 @@ export const useStore = create<State>()(
             .filter((x): x is NonNullable<typeof x> => Boolean(x));
           if (items.length === 0) return {};
           const total = items.reduce((n, it) => n + it.price * it.qty, 0);
-          const order: Order = { id: uid("ord"), items, total, createdAt: Date.now() };
+          const order: Order = {
+            id: uid("ord"),
+            items,
+            total,
+            createdAt: Date.now(),
+            address,
+            status: "dikemas",
+          };
           return { orders: [order, ...s.orders], cart: [] };
         }),
+
+      updateOrderStatus: (orderId, status) =>
+        set((s) => ({
+          orders: s.orders.map((o) => (o.id === orderId ? { ...o, status } : o)),
+        })),
 
       cartCount: () => get().cart.reduce((n, c) => n + c.qty, 0),
 
@@ -343,6 +362,16 @@ export const useStore = create<State>()(
           };
         }),
 
+      startChat: (userId) =>
+        set((s) => ({
+          activeChatUserId: userId,
+          conversations: s.conversations.some((c) => c.userId === userId)
+            ? s.conversations
+            : [{ userId, messages: [] }, ...s.conversations],
+        })),
+
+      clearActiveChat: () => set({ activeChatUserId: null }),
+
       markStorySeen: (id) =>
         set((s) => ({
           stories: s.stories.map((st) => (st.id === id ? { ...st, seen: true } : st)),
@@ -368,6 +397,7 @@ export const useStore = create<State>()(
           products: SEED_PRODUCTS,
           cart: [],
           orders: [],
+          activeChatUserId: null,
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],

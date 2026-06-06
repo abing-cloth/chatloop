@@ -1,17 +1,25 @@
 import { useRef, useState } from "react";
-import { ImagePlus, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
+import { ImagePlus, MessageCircle, Package, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { PRODUCT_CATEGORIES } from "../lib/seed";
 import { cn, fileToDataUrl, formatRupiah } from "../lib/utils";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import type { Product } from "../lib/types";
+import type { View } from "../components/Sidebar";
 
-export function Shop({ onOpenCart }: { onOpenCart: () => void }) {
+export function Shop({
+  onOpenCart,
+  onNavigate,
+}: {
+  onOpenCart: () => void;
+  onNavigate: (v: View) => void;
+}) {
   const products = useStore((s) => s.products);
   const user = useStore((s) => s.user);
   const me = useStore((s) => s.currentUserId);
   const addToCart = useStore((s) => s.addToCart);
   const deleteProduct = useStore((s) => s.deleteProduct);
+  const startChat = useStore((s) => s.startChat);
   const cartCount = useStore((s) => s.cartCount());
 
   const [cat, setCat] = useState("Semua");
@@ -45,6 +53,13 @@ export function Shop({ onOpenCart }: { onOpenCart: () => void }) {
             className="flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={16} /> Jual
+          </button>
+          <button
+            onClick={() => onNavigate("orders")}
+            title="Pesanan Saya"
+            className="rounded-full bg-zinc-100 p-2.5 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            <Package size={20} />
           </button>
           <button
             onClick={onOpenCart}
@@ -159,7 +174,20 @@ export function Shop({ onOpenCart }: { onOpenCart: () => void }) {
                   <span className="font-semibold">{user(detail.sellerId).name}</span>
                   {user(detail.sellerId).verified && <VerifiedBadge size={14} />}
                 </div>
-                <span className="ml-auto text-xs text-zinc-400">Penjual</span>
+                {detail.sellerId === me ? (
+                  <span className="ml-auto text-xs text-zinc-400">Produk Anda</span>
+                ) : (
+                  <button
+                    onClick={() => {
+                      startChat(detail.sellerId);
+                      setDetail(null);
+                      onNavigate("messages");
+                    }}
+                    className="ml-auto flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    <MessageCircle size={14} /> Hubungi
+                  </button>
+                )}
               </div>
               <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{detail.description}</p>
 

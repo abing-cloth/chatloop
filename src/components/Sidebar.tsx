@@ -22,6 +22,7 @@ export type View =
   | "explore"
   | "live"
   | "shop"
+  | "orders"
   | "messages"
   | "notifications"
   | "saved"
