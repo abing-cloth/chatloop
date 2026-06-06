@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, formatRupiah } from "../lib/utils";
+import { applyVoucher } from "../lib/vouchers";
 import type { PaymentMethod } from "../lib/types";
 
 type Step = "cart" | "address" | "done";
@@ -48,7 +49,20 @@ export function CartDrawer({
   const [phone, setPhone] = useState(me.phone ?? "");
   const [address, setAddress] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("transfer");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [voucherMsg, setVoucherMsg] = useState("");
+  const [voucherOk, setVoucherOk] = useState(false);
   const [error, setError] = useState("");
+
+  const grandTotal = Math.max(0, total - discount);
+
+  function useVoucher() {
+    const r = applyVoucher(voucherCode, total);
+    setDiscount(r.discount);
+    setVoucherOk(r.ok);
+    setVoucherMsg(r.msg);
+  }
 
   const items = cart
     .map((c) => {
@@ -68,9 +82,13 @@ export function CartDrawer({
     if (!name.trim()) return setError("Nama penerima wajib diisi.");
     if (phone.replace(/\D/g, "").length < 6) return setError("Nomor telepon tidak valid.");
     if (!address.trim()) return setError("Alamat pengiriman wajib diisi.");
-    if (payment === "saldo" && walletBalance < total)
+    if (payment === "saldo" && walletBalance < grandTotal)
       return setError("Saldo tidak cukup. Pilih metode lain atau top up dompet.");
-    checkout({ name: name.trim(), phone: phone.trim(), address: address.trim() }, payment);
+    checkout(
+      { name: name.trim(), phone: phone.trim(), address: address.trim() },
+      payment,
+      { discount, voucher: voucherOk ? voucherCode.trim().toUpperCase() : undefined }
+    );
     setStep("done");
   }
 
@@ -234,11 +252,36 @@ export function CartDrawer({
 
               {error && <p className="text-sm text-red-500">{error}</p>}
 
+              {/* voucher */}
+              <div className="pt-1">
+                <div className="flex gap-2">
+                  <input
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    placeholder="Kode voucher (mis. HEMAT10)"
+                    className="flex-1 rounded-xl bg-zinc-100 px-4 py-2.5 text-sm uppercase outline-none focus:ring-2 focus:ring-fuchsia-300 dark:bg-zinc-800"
+                  />
+                  <button onClick={useVoucher} className="rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
+                    Pakai
+                  </button>
+                </div>
+                {voucherMsg && (
+                  <p className={cn("mt-1.5 text-xs", voucherOk ? "text-emerald-600" : "text-red-500")}>{voucherMsg}</p>
+                )}
+                <p className="mt-1 text-[11px] text-zinc-400">Coba: HEMAT10 · NEWUSER · DISKON50K</p>
+              </div>
+
               <div className="rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">
                 <div className="flex justify-between text-zinc-500">
                   <span>Subtotal ({items.length} item)</span>
                   <span>{formatRupiah(total)}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Diskon voucher</span>
+                    <span>−{formatRupiah(discount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-zinc-500">
                   <span>Ongkir</span>
                   <span className="text-emerald-600">Gratis</span>
@@ -248,7 +291,7 @@ export function CartDrawer({
             <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm text-zinc-500">Total bayar</span>
-                <span className="text-xl font-extrabold text-fuchsia-600 dark:text-fuchsia-400">{formatRupiah(total)}</span>
+                <span className="text-xl font-extrabold text-fuchsia-600 dark:text-fuchsia-400">{formatRupiah(grandTotal)}</span>
               </div>
               <button
                 onClick={placeOrder}

@@ -70,7 +70,8 @@ export interface Product {
   id: string;
   sellerId: string;
   name: string;
-  price: number; // Rupiah
+  price: number; // Rupiah (harga jual)
+  oldPrice?: number; // harga coret (jika diskon)
   image: string;
   description: string;
   category: string;
@@ -101,7 +102,9 @@ export type PaymentMethod = "saldo" | "transfer" | "ewallet" | "cod";
 export interface Order {
   id: string;
   items: OrderItem[];
-  total: number;
+  total: number; // setelah diskon
+  discount?: number;
+  voucher?: string;
   createdAt: number;
   address: ShippingAddress;
   status: OrderStatus;
@@ -125,6 +128,14 @@ export interface Reel {
   music: string;
   likedBy: string[];
   comments: number;
+  createdAt: number;
+}
+
+export interface ReelComment {
+  id: string;
+  reelId: string;
+  userId: string;
+  text: string;
   createdAt: number;
 }
 

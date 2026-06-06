@@ -97,6 +97,9 @@ export function Orders() {
                   <p className="font-medium text-zinc-700 dark:text-zinc-300">{o.address.name} · {o.address.phone}</p>
                   <p className="line-clamp-1">{o.address.address}</p>
                   <p className="mt-0.5">💳 {PAYMENT_LABEL[o.payment] ?? o.payment}</p>
+                  {o.discount ? (
+                    <p className="mt-0.5 text-emerald-600">🏷️ Voucher {o.voucher} −{formatRupiah(o.discount)}</p>
+                  ) : null}
                 </div>
                 <span className="shrink-0 text-base font-extrabold text-fuchsia-600 dark:text-fuchsia-400">
                   {formatRupiah(o.total)}

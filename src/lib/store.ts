@@ -13,6 +13,7 @@ import type {
   Post,
   Product,
   Reel,
+  ReelComment,
   Review,
   ScheduledLive,
   ShippingAddress,
@@ -83,7 +84,9 @@ interface State {
   cart: CartItem[];
   orders: Order[];
   reviews: Review[];
+  wishlistIds: string[];
   reels: Reel[];
+  reelComments: ReelComment[];
   groups: Group[];
   joinedGroupIds: string[];
   groupPosts: GroupPost[];
@@ -131,7 +134,12 @@ interface State {
   setQty: (productId: string, qty: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
-  checkout: (address: ShippingAddress, payment: PaymentMethod) => void;
+  toggleWishlist: (productId: string) => void;
+  checkout: (
+    address: ShippingAddress,
+    payment: PaymentMethod,
+    opts?: { discount?: number; voucher?: string }
+  ) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   cartCount: () => number;
   cartTotal: () => number;
@@ -141,6 +149,7 @@ interface State {
   // reels
   toggleReelLike: (reelId: string) => void;
   addReel: (data: { video: string; caption: string; music?: string }) => void;
+  addReelComment: (reelId: string, text: string) => void;
 
   // grup
   toggleJoinGroup: (groupId: string) => void;
@@ -175,7 +184,9 @@ export const useStore = create<State>()(
       cart: [],
       orders: [],
       reviews: SEED_REVIEWS,
+      wishlistIds: [],
       reels: SEED_REELS,
+      reelComments: [],
       groups: SEED_GROUPS,
       joinedGroupIds: [],
       groupPosts: SEED_GROUP_POSTS,
@@ -300,7 +311,14 @@ export const useStore = create<State>()(
 
       clearCart: () => set({ cart: [] }),
 
-      checkout: (address, payment) =>
+      toggleWishlist: (productId) =>
+        set((s) => ({
+          wishlistIds: s.wishlistIds.includes(productId)
+            ? s.wishlistIds.filter((id) => id !== productId)
+            : [productId, ...s.wishlistIds],
+        })),
+
+      checkout: (address, payment, opts) =>
         set((s) => {
           const items = s.cart
             .map((c) => {
@@ -309,12 +327,16 @@ export const useStore = create<State>()(
             })
             .filter((x): x is NonNullable<typeof x> => Boolean(x));
           if (items.length === 0) return {};
-          const total = items.reduce((n, it) => n + it.price * it.qty, 0);
+          const subtotal = items.reduce((n, it) => n + it.price * it.qty, 0);
+          const discount = Math.min(opts?.discount ?? 0, subtotal);
+          const total = subtotal - discount;
           if (payment === "saldo" && s.walletBalance < total) return {};
           const order: Order = {
             id: uid("ord"),
             items,
             total,
+            discount: discount || undefined,
+            voucher: opts?.voucher,
             createdAt: Date.now(),
             address,
             status: "dikemas",
@@ -389,6 +411,14 @@ export const useStore = create<State>()(
               createdAt: Date.now(),
             },
             ...s.reels,
+          ],
+        })),
+
+      addReelComment: (reelId, text) =>
+        set((s) => ({
+          reelComments: [
+            ...s.reelComments,
+            { id: uid("rc"), reelId, userId: s.currentUserId, text: text.trim(), createdAt: Date.now() },
           ],
         })),
 
@@ -552,7 +582,9 @@ export const useStore = create<State>()(
           cart: [],
           orders: [],
           reviews: SEED_REVIEWS,
+          wishlistIds: [],
           reels: SEED_REELS,
+          reelComments: [],
           groups: SEED_GROUPS,
           joinedGroupIds: [],
           groupPosts: SEED_GROUP_POSTS,

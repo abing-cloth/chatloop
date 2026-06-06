@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ImagePlus, MessageCircle, Package, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
+import { Heart, ImagePlus, MessageCircle, Package, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { PRODUCT_CATEGORIES } from "../lib/seed";
 import { cn, fileToDataUrl, formatRupiah, timeAgo } from "../lib/utils";
@@ -23,6 +23,9 @@ export function Shop({
   const startChat = useStore((s) => s.startChat);
   const cartCount = useStore((s) => s.cartCount());
   const reviews = useStore((s) => s.reviews);
+  const wishlist = useStore((s) => s.wishlistIds);
+  const toggleWishlist = useStore((s) => s.toggleWishlist);
+  const [onlyWishlist, setOnlyWishlist] = useState(false);
 
   const ratingFor = (productId: string) => {
     const rs = reviews.filter((r) => r.productId === productId);
@@ -39,8 +42,10 @@ export function Shop({
   const filtered = products.filter(
     (p) =>
       (cat === "Semua" || p.category === cat) &&
-      (query.trim() === "" || p.name.toLowerCase().includes(query.toLowerCase()))
+      (query.trim() === "" || p.name.toLowerCase().includes(query.toLowerCase())) &&
+      (!onlyWishlist || wishlist.includes(p.id))
   );
+  const discountPct = (p: Product) => (p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0);
 
   function add(p: Product) {
     addToCart(p.id);
@@ -60,6 +65,19 @@ export function Shop({
             className="flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={16} /> Jual
+          </button>
+          <button
+            onClick={() => setOnlyWishlist((v) => !v)}
+            title="Wishlist"
+            className={cn(
+              "relative rounded-full p-2.5 transition",
+              onlyWishlist ? "bg-pink-100 text-pink-600 dark:bg-pink-950/40" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+            )}
+          >
+            <Heart size={20} className={onlyWishlist ? "fill-pink-600" : ""} />
+            {wishlist.length > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-pink-500 px-1 text-[11px] font-bold text-white">{wishlist.length}</span>
+            )}
           </button>
           <button
             onClick={() => onNavigate("orders")}
@@ -119,17 +137,27 @@ export function Shop({
                 key={p.id}
                 className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <button onClick={() => setDetail(p)} className="block w-full">
-                  <div className="aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                <div className="relative">
+                  <button onClick={() => setDetail(p)} className="block aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                     <img src={p.image} alt={p.name} className="h-full w-full object-cover transition group-hover:scale-105" />
-                  </div>
-                </button>
+                  </button>
+                  {discountPct(p) > 0 && (
+                    <span className="absolute left-2 top-2 rounded-md bg-red-500 px-1.5 py-0.5 text-[11px] font-bold text-white">-{discountPct(p)}%</span>
+                  )}
+                  <button
+                    onClick={() => toggleWishlist(p.id)}
+                    className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur transition active:scale-90"
+                  >
+                    <Heart size={16} className={wishlist.includes(p.id) ? "fill-pink-500 text-pink-500" : ""} />
+                  </button>
+                </div>
                 <div className="p-2.5">
                   <button onClick={() => setDetail(p)} className="block w-full text-left">
                     <p className="line-clamp-2 text-sm font-medium">{p.name}</p>
-                    <p className="mt-1 font-bold text-fuchsia-600 dark:text-fuchsia-400">
-                      {formatRupiah(p.price)}
-                    </p>
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                      <p className="font-bold text-fuchsia-600 dark:text-fuchsia-400">{formatRupiah(p.price)}</p>
+                      {p.oldPrice && <span className="text-xs text-zinc-400 line-through">{formatRupiah(p.oldPrice)}</span>}
+                    </div>
                     {ratingFor(p.id).count > 0 && (
                       <div className="mt-1 flex items-center gap-1">
                         <Stars value={ratingFor(p.id).avg} size={12} />
@@ -177,10 +205,25 @@ export function Shop({
               <span className="rounded-full bg-fuchsia-50 px-2.5 py-1 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300">
                 {detail.category}
               </span>
-              <h3 className="mt-2 text-lg font-bold">{detail.name}</h3>
-              <p className="mt-1 text-2xl font-extrabold text-fuchsia-600 dark:text-fuchsia-400">
-                {formatRupiah(detail.price)}
-              </p>
+              <div className="mt-2 flex items-start justify-between gap-2">
+                <h3 className="text-lg font-bold">{detail.name}</h3>
+                <button
+                  onClick={() => toggleWishlist(detail.id)}
+                  className="shrink-0 rounded-full border border-zinc-200 p-2 dark:border-zinc-700"
+                  title="Wishlist"
+                >
+                  <Heart size={18} className={wishlist.includes(detail.id) ? "fill-pink-500 text-pink-500" : "text-zinc-500"} />
+                </button>
+              </div>
+              <div className="mt-1 flex items-baseline gap-2">
+                <p className="text-2xl font-extrabold text-fuchsia-600 dark:text-fuchsia-400">{formatRupiah(detail.price)}</p>
+                {detail.oldPrice && (
+                  <>
+                    <span className="text-sm text-zinc-400 line-through">{formatRupiah(detail.oldPrice)}</span>
+                    <span className="rounded-md bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">-{discountPct(detail)}%</span>
+                  </>
+                )}
+              </div>
               <div className="mt-3 flex items-center gap-2 border-y border-zinc-100 py-3 dark:border-zinc-800">
                 <img src={user(detail.sellerId).avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
                 <div className="flex items-center gap-1 text-sm">
