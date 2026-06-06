@@ -1,4 +1,4 @@
-import type { Conversation, Post, Story, User } from "./types";
+import type { Conversation, LiveStream, Post, Story, User } from "./types";
 
 const img = (seed: string, w = 800, h = 800) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`;
@@ -83,6 +83,14 @@ export const SEED_STORIES: Story[] = SEED_USERS.slice(1).map((u, i) => ({
   createdAt: now - i * hr,
   seen: false,
 }));
+
+export const SEED_LIVES: LiveStream[] = [
+  { id: "l1", userId: "u4", title: "Live coding: bikin fitur baru 💻🚀", thumbnail: img("live-code", 600, 800), viewers: 2104, category: "Teknologi" },
+  { id: "l2", userId: "u3", title: "Jalan-jalan sore di pantai 🏖️", thumbnail: img("live-beach", 600, 800), viewers: 1243, category: "Travel" },
+  { id: "l3", userId: "u1", title: "Ngopi & ngobrol santai bareng ☕", thumbnail: img("live-coffee", 600, 800), viewers: 876, category: "Obrolan" },
+  { id: "l4", userId: "u5", title: "Yoga pagi, yuk gerak bareng 🧘‍♀️", thumbnail: img("live-yoga", 600, 800), viewers: 654, category: "Kesehatan" },
+  { id: "l5", userId: "u2", title: "Hunting foto street photography 📷", thumbnail: img("live-street", 600, 800), viewers: 432, category: "Fotografi" },
+];
 
 export const SEED_CONVERSATIONS: Conversation[] = [
   {

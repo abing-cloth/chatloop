@@ -1,4 +1,4 @@
-import { Bookmark, Home, MessageCircle, Search } from "lucide-react";
+import { Home, MessageCircle, Radio, Search } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import type { View } from "./Sidebar";
@@ -6,8 +6,8 @@ import type { View } from "./Sidebar";
 const ITEMS = [
   { id: "feed", icon: Home },
   { id: "explore", icon: Search },
+  { id: "live", icon: Radio },
   { id: "messages", icon: MessageCircle },
-  { id: "saved", icon: Bookmark },
 ] as const;
 
 export function MobileNav({

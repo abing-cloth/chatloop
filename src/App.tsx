@@ -10,6 +10,7 @@ import { Explore } from "./pages/Explore";
 import { Notifications } from "./pages/Notifications";
 import { Saved } from "./pages/Saved";
 import { Settings } from "./pages/Settings";
+import { Live } from "./pages/Live";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { useStore } from "./lib/store";
@@ -36,6 +37,7 @@ export default function App() {
           <div key={view} className="animate-fade">
             {view === "feed" && <Feed />}
             {view === "explore" && <Explore />}
+            {view === "live" && <Live />}
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}

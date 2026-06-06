@@ -5,6 +5,7 @@ import {
   LogOut,
   MessageCircle,
   Moon,
+  Radio,
   RotateCcw,
   Search,
   Settings as SettingsIcon,
@@ -17,6 +18,7 @@ import { cn } from "../lib/utils";
 export type View =
   | "feed"
   | "explore"
+  | "live"
   | "messages"
   | "notifications"
   | "saved"
@@ -26,6 +28,7 @@ export type View =
 const NAV = [
   { id: "feed", label: "Beranda", icon: Home },
   { id: "explore", label: "Jelajahi", icon: Search },
+  { id: "live", label: "Live", icon: Radio },
   { id: "messages", label: "Pesan", icon: MessageCircle },
   { id: "notifications", label: "Notifikasi", icon: Bell },
   { id: "saved", label: "Tersimpan", icon: Bookmark },

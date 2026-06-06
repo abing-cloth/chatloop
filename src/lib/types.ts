@@ -45,4 +45,13 @@ export interface Conversation {
   messages: Message[];
 }
 
+export interface LiveStream {
+  id: string;
+  userId: string;
+  title: string;
+  thumbnail: string;
+  viewers: number;
+  category: string;
+}
+
 export type Theme = "light" | "dark";

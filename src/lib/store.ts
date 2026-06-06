@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Comment, Conversation, Post, Story, Theme, User } from "./types";
+import type { Comment, Conversation, LiveStream, Post, Story, Theme, User } from "./types";
 import {
   ME,
   SEED_CONVERSATIONS,
+  SEED_LIVES,
   SEED_POSTS,
   SEED_STORIES,
   SEED_USERS,
@@ -34,6 +35,7 @@ interface State {
   posts: Post[];
   stories: Story[];
   conversations: Conversation[];
+  liveStreams: LiveStream[];
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
@@ -71,6 +73,7 @@ export const useStore = create<State>()(
       posts: SEED_POSTS,
       stories: SEED_STORIES,
       conversations: SEED_CONVERSATIONS,
+      liveStreams: SEED_LIVES,
       theme: "light",
       savedPostIds: [],
       followingIds: [],
@@ -211,6 +214,7 @@ export const useStore = create<State>()(
           posts: SEED_POSTS,
           stories: SEED_STORIES,
           conversations: SEED_CONVERSATIONS,
+          liveStreams: SEED_LIVES,
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],
