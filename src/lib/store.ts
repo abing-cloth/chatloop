@@ -180,12 +180,15 @@ interface State {
   withdraw: (amount: number) => boolean;
 
   addPost: (text: string, image?: string) => void;
+  editPost: (postId: string, text: string) => void;
+  editComment: (postId: string, commentId: string, text: string) => void;
+  deleteComment: (postId: string, commentId: string) => void;
   drafts: Draft[];
   saveDraft: (d: { text: string; image?: string }) => void;
   deleteDraft: (id: string) => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
-  addComment: (postId: string, text: string) => void;
+  addComment: (postId: string, text: string, parentId?: string) => void;
 
   markStorySeen: (id: string) => void;
   updateProfile: (data: Partial<Pick<User, "bio" | "avatar" | "username" | "cover">>) => void;
@@ -585,13 +588,14 @@ export const useStore = create<State>()(
           }),
         })),
 
-      addComment: (postId, text) =>
+      addComment: (postId, text, parentId) =>
         set((s) => {
           const comment: Comment = {
             id: uid("c"),
             userId: s.currentUserId,
             text: text.trim(),
             createdAt: Date.now(),
+            parentId,
           };
           return {
             posts: s.posts.map((p) =>
@@ -599,6 +603,29 @@ export const useStore = create<State>()(
             ),
           };
         }),
+
+      editPost: (postId, text) =>
+        set((s) => ({
+          posts: s.posts.map((p) => (p.id === postId ? { ...p, text: text.trim() } : p)),
+        })),
+
+      editComment: (postId, commentId, text) =>
+        set((s) => ({
+          posts: s.posts.map((p) =>
+            p.id === postId
+              ? { ...p, comments: p.comments.map((c) => (c.id === commentId ? { ...c, text: text.trim() } : c)) }
+              : p
+          ),
+        })),
+
+      deleteComment: (postId, commentId) =>
+        set((s) => ({
+          posts: s.posts.map((p) =>
+            p.id === postId
+              ? { ...p, comments: p.comments.filter((c) => c.id !== commentId && c.parentId !== commentId) }
+              : p
+          ),
+        })),
 
       startChat: (userId) =>
         set((s) => ({

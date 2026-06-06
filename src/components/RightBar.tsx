@@ -1,10 +1,12 @@
 import { useStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 
 export function RightBar() {
   const users = useStore((s) => s.users).filter((u) => u.id !== "me");
   const following = useStore((s) => s.followingIds);
   const toggleFollow = useStore((s) => s.toggleFollow);
   const openProfile = useStore((s) => s.openProfile);
+  const tr = useT();
 
   return (
     <aside className="sticky top-20 hidden h-fit w-72 shrink-0 xl:block">
@@ -33,7 +35,7 @@ export function RightBar() {
                       : "rounded-full bg-fuchsia-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-fuchsia-700"
                   }
                 >
-                  {isFollowing ? "Mengikuti" : "Ikuti"}
+                  {isFollowing ? tr("common.following") : tr("common.follow")}
                 </button>
               </div>
             );

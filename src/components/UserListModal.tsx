@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import { VerifiedBadge } from "./VerifiedBadge";
 import type { User } from "../lib/types";
 
@@ -17,6 +18,7 @@ export function UserListModal({
   const following = useStore((s) => s.followingIds);
   const toggleFollow = useStore((s) => s.toggleFollow);
   const openProfile = useStore((s) => s.openProfile);
+  const tr = useT();
 
   return (
     <div className="fixed inset-0 z-[88] flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={onClose}>
@@ -46,7 +48,7 @@ export function UserListModal({
                       isFollowing ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700"
                     )}
                   >
-                    {isFollowing ? "Mengikuti" : "Ikuti"}
+                    {isFollowing ? tr("common.following") : tr("common.follow")}
                   </button>
                 )}
               </div>

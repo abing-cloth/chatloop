@@ -6,6 +6,7 @@ import { UserListModal } from "../components/UserListModal";
 import { ShareModal } from "../components/ShareModal";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl, formatRupiah } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import type { View } from "../lib/types";
 
 type Tab = "post" | "reels" | "produk";
@@ -29,6 +30,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
   const startChat = useStore((s) => s.startChat);
   const followerCount = useStore((s) => s.followerCount(target.id));
   const followingCount = useStore((s) => s.followingCount(target.id));
+  const tr = useT();
 
   const avatarRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
@@ -125,7 +127,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => toggleFollow(target.id)} className={cn("rounded-full px-5 py-2 text-sm font-semibold transition", isFollowing ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700")}>{isFollowing ? "Mengikuti" : "Ikuti"}</button>
+                <button onClick={() => toggleFollow(target.id)} className={cn("rounded-full px-5 py-2 text-sm font-semibold transition", isFollowing ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700")}>{isFollowing ? tr("common.following") : tr("common.follow")}</button>
                 <button onClick={() => { startChat(target.id); onNavigate("messages"); }} title="Pesan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><MessageCircle size={18} /></button>
                 <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
               </div>

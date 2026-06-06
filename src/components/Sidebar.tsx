@@ -2,6 +2,7 @@ import {
   Bell,
   Bookmark,
   Clapperboard,
+  Heart,
   Home,
   LogOut,
   MessageCircle,
@@ -34,6 +35,7 @@ const NAV = [
   { id: "messages", icon: MessageCircle },
   { id: "notifications", icon: Bell },
   { id: "saved", icon: Bookmark },
+  { id: "liked", icon: Heart },
   { id: "profile", icon: UserIcon },
   { id: "settings", icon: SettingsIcon },
 ] as const;

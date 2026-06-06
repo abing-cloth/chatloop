@@ -24,6 +24,7 @@ export type View =
   | "messages"
   | "notifications"
   | "saved"
+  | "liked"
   | "insights"
   | "profile"
   | "settings";
@@ -33,6 +34,7 @@ export interface Comment {
   userId: string;
   text: string;
   createdAt: number;
+  parentId?: string; // untuk balasan komentar
 }
 
 export interface Post {

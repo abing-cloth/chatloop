@@ -17,6 +17,7 @@ import { Reels } from "./pages/Reels";
 import { Groups } from "./pages/Groups";
 import { Wallet } from "./pages/Wallet";
 import { Insights } from "./pages/Insights";
+import { Liked } from "./pages/Liked";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
@@ -100,6 +101,7 @@ export default function App() {
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}
+            {view === "liked" && <Liked />}
             {view === "profile" && <Profile onNavigate={setView} />}
             {view === "settings" && <Settings />}
           </div>
