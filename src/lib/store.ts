@@ -133,7 +133,7 @@ interface State {
   findByUsername: (username: string) => User | undefined;
 
   toggleTheme: () => void;
-  sendMessage: (userId: string, text: string, opts?: { image?: string; replyToId?: string; audio?: string; duration?: number }) => void;
+  sendMessage: (userId: string, text: string, opts?: { image?: string; replyToId?: string; audio?: string; duration?: number; location?: { lat: number; lng: number } }) => void;
   receiveMessage: (userId: string, text: string) => void;
   deleteMessage: (userId: string, messageId: string) => void;
   reactMessage: (userId: string, messageId: string, emoji: string) => void;
@@ -544,6 +544,7 @@ export const useStore = create<State>()(
             image: opts?.image,
             audio: opts?.audio,
             duration: opts?.duration,
+            location: opts?.location,
             replyToId: opts?.replyToId,
             read: false,
           };

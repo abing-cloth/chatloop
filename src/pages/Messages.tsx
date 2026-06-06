@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, ArchiveRestore, ArrowLeft, Check, CheckCheck, ImagePlus, Mic, Reply, Send, SmilePlus, Trash2, Video, X } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Check, CheckCheck, ImagePlus, MapPin, Mic, Phone, Reply, Send, SmilePlus, Trash2, Video, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl, timeAgo } from "../lib/utils";
 import { EmojiPicker } from "../components/EmojiPicker";
@@ -32,7 +32,7 @@ export function Messages() {
   const [typing, setTyping] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; text: string; name: string } | null>(null);
   const [reactingId, setReactingId] = useState<string | null>(null);
-  const [calling, setCalling] = useState(false);
+  const [callMode, setCallMode] = useState<null | "voice" | "video">(null);
   const [recording, setRecording] = useState(false);
   const [recSec, setRecSec] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
@@ -95,6 +95,19 @@ export function Messages() {
 
   function pickMention(username: string) {
     setText(text.replace(/@[a-zA-Z0-9_.]*$/, `@${username} `));
+  }
+
+  function shareLocation() {
+    if (!activeId) return;
+    const to = activeId;
+    if (!navigator.geolocation) return alert("Perangkat tidak mendukung lokasi.");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        sendMessage(to, "", { location: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
+        setTimeout(() => markRead(to), 1200);
+      },
+      () => alert("Tidak bisa mengambil lokasi (izin ditolak).")
+    );
   }
 
   const msgById = (id?: string) => (id ? active?.messages.find((m) => m.id === id) : undefined);
@@ -221,7 +234,10 @@ export function Messages() {
               <p className="text-sm font-semibold leading-tight">{user(active.userId).name}</p>
               <p className="text-xs text-emerald-500">{typing ? "sedang mengetik…" : "Aktif sekarang"}</p>
             </div>
-            <button onClick={() => setCalling(true)} title="Panggilan video" className="grid h-9 w-9 place-items-center rounded-full text-fuchsia-600 hover:bg-fuchsia-50 dark:text-fuchsia-400 dark:hover:bg-fuchsia-950/40">
+            <button onClick={() => setCallMode("voice")} title="Panggilan suara" className="grid h-9 w-9 place-items-center rounded-full text-fuchsia-600 hover:bg-fuchsia-50 dark:text-fuchsia-400 dark:hover:bg-fuchsia-950/40">
+              <Phone size={19} />
+            </button>
+            <button onClick={() => setCallMode("video")} title="Panggilan video" className="grid h-9 w-9 place-items-center rounded-full text-fuchsia-600 hover:bg-fuchsia-50 dark:text-fuchsia-400 dark:hover:bg-fuchsia-950/40">
               <Video size={20} />
             </button>
           </div>
@@ -261,6 +277,19 @@ export function Messages() {
                           <audio controls src={m.audio} className="h-8 max-w-[180px]" />
                           {m.duration ? <span className="text-xs opacity-80">{m.duration}s</span> : null}
                         </div>
+                      )}
+                      {m.location && (
+                        <a href={`https://www.google.com/maps?q=${m.location.lat},${m.location.lng}`} target="_blank" rel="noreferrer" className="block w-56">
+                          <img
+                            src={`https://staticmap.openstreetmap.de/staticmap.php?center=${m.location.lat},${m.location.lng}&zoom=15&size=300x140&markers=${m.location.lat},${m.location.lng},red-pushpin`}
+                            alt="peta"
+                            className="h-28 w-full bg-zinc-200 object-cover dark:bg-zinc-700"
+                            onError={(e) => { (e.currentTarget.style.display = "none"); }}
+                          />
+                          <div className={cn("flex items-center gap-1.5 px-3 py-2 text-sm", mine ? "text-white" : "text-zinc-700 dark:text-zinc-200")}>
+                            <MapPin size={15} /> Lokasi saya · Buka di Maps
+                          </div>
+                        </a>
                       )}
                       {m.text && <p className="px-4 py-2"><MentionText text={m.text} /></p>}
                     </div>
@@ -327,6 +356,9 @@ export function Messages() {
                 <button onClick={() => fileRef.current?.click()} title="Kirim foto" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                   <ImagePlus size={20} />
                 </button>
+                <button onClick={shareLocation} title="Bagikan lokasi" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                  <MapPin size={20} />
+                </button>
                 <input ref={fileRef} type="file" accept="image/*" hidden onChange={sendImage} />
                 <div className="flex flex-1 items-center gap-1 rounded-full bg-zinc-100 px-3 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800">
                   <input
@@ -353,7 +385,7 @@ export function Messages() {
         </div>
       )}
 
-      {calling && active && <VideoCall user={user(active.userId)} onEnd={() => setCalling(false)} />}
+      {callMode && active && <VideoCall user={user(active.userId)} mode={callMode} onEnd={() => setCallMode(null)} />}
     </div>
   );
 }

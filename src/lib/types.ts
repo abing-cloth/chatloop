@@ -65,6 +65,7 @@ export interface Message {
   image?: string;
   audio?: string;
   duration?: number; // detik (voice note)
+  location?: { lat: number; lng: number };
   replyToId?: string;
   read?: boolean;
   reaction?: string; // emoji reaksi
