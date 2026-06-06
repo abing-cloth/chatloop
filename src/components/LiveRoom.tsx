@@ -38,10 +38,14 @@ let hid = 1;
 export function LiveRoom({
   mode,
   stream,
+  title,
+  category,
   onClose,
 }: {
   mode: "host" | "viewer";
   stream?: LiveStream;
+  title?: string;
+  category?: string;
   onClose: () => void;
 }) {
   const me = useStore((s) => s.me());
@@ -49,6 +53,8 @@ export function LiveRoom({
   const users = useStore((s) => s.users).filter((u) => u.id !== "me");
 
   const host = mode === "viewer" && stream ? user(stream.userId) : me;
+  const liveTitle = stream?.title ?? title;
+  const liveCategory = stream?.category ?? category;
   const [viewers, setViewers] = useState(stream?.viewers ?? 1);
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [hearts, setHearts] = useState<FloatHeart[]>([]);
@@ -174,13 +180,15 @@ export function LiveRoom({
           </button>
         </div>
 
-        {/* judul (viewer) */}
-        {mode === "viewer" && stream && (
+        {/* judul & kategori */}
+        {liveTitle && (
           <div className="absolute left-3 top-16 max-w-[70%]">
-            <span className="rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
-              {stream.category}
-            </span>
-            <p className="mt-1.5 text-sm font-medium text-white drop-shadow">{stream.title}</p>
+            {liveCategory && (
+              <span className="rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
+                {liveCategory}
+              </span>
+            )}
+            <p className="mt-1.5 text-sm font-medium text-white drop-shadow">{liveTitle}</p>
           </div>
         )}
 
