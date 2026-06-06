@@ -10,6 +10,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["chatloop.svg", "apple-touch-icon.png"],
+      devOptions: { enabled: true },
       manifest: {
         name: "ChatLoop — Ngobrol, terhubung, tanpa henti",
         short_name: "ChatLoop",

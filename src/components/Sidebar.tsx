@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
+import { InstallButton } from "./InstallButton";
 
 export type View =
   | "feed"
@@ -79,6 +80,8 @@ export function Sidebar({
         {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
         {theme === "dark" ? "Mode Terang" : "Mode Gelap"}
       </button>
+
+      <InstallButton hideWhenInstalled className="mt-3 w-full" />
 
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center gap-3">

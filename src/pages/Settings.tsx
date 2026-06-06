@@ -1,5 +1,6 @@
 import {
   Bell,
+  Download,
   Info,
   LogOut,
   Moon,
@@ -10,6 +11,7 @@ import {
 import { useStore } from "../lib/store";
 import type { Settings as SettingsType } from "../lib/store";
 import { cn } from "../lib/utils";
+import { InstallButton } from "../components/InstallButton";
 
 export function Settings() {
   const theme = useStore((s) => s.theme);
@@ -31,6 +33,16 @@ export function Settings() {
           checked={theme === "dark"}
           onChange={toggleTheme}
         />
+      </Section>
+
+      <Section icon={<Download size={18} />} title="Aplikasi">
+        <div className="px-1 py-1">
+          <p className="mb-3 text-sm text-zinc-500">
+            Pasang ChatLoop sebagai aplikasi — buka langsung dari layar utama,
+            tampil layar penuh, dan bisa dipakai offline.
+          </p>
+          <InstallButton className="w-full" />
+        </div>
       </Section>
 
       <Section icon={<Bell size={18} />} title="Notifikasi">

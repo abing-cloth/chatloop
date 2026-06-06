@@ -28,7 +28,7 @@ Aplikasi media sosial & chat ala **Facebook / Instagram**. Dibuat dengan React 1
 - **Profil** — edit nama, bio, foto profil; statistik & galeri postingan
 - **Ikuti / Mengikuti** — tersinkron di semua halaman
 - **Navigasi mobile** — bottom nav bar responsif di layar kecil
-- **PWA** 📱 — bisa di-install di HP/desktop, jalan offline
+- **PWA — bisa di-download/install** 📲 — tombol "Pasang Aplikasi" (Android/desktop) + panduan iPhone; jalan offline & layar penuh seperti app native
 - **Persisten** — semua data tersimpan di browser; tombol reset untuk kembali ke data demo
 
 > Catatan: fitur PWA (install & offline) aktif pada mode **build/preview**, bukan `dev`.
