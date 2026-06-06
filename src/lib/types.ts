@@ -10,6 +10,8 @@ export interface User {
   cover?: string; // foto sampul
   followers?: number; // jumlah pengikut (baseline)
   following?: number; // jumlah yang diikuti (baseline)
+  admin?: boolean; // pengelola aplikasi
+  banned?: boolean; // diblokir oleh admin
 }
 
 export type View =
@@ -26,6 +28,7 @@ export type View =
   | "saved"
   | "liked"
   | "insights"
+  | "admin"
   | "profile"
   | "settings";
 

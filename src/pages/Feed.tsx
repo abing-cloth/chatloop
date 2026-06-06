@@ -6,7 +6,10 @@ import { useStore } from "../lib/store";
 import { useT } from "../lib/i18n";
 
 export function Feed() {
-  const posts = useStore((s) => s.posts);
+  const allPosts = useStore((s) => s.posts);
+  const blocked = useStore((s) => s.blockedIds);
+  const user = useStore((s) => s.user);
+  const posts = allPosts.filter((p) => !blocked.includes(p.userId) && !user(p.userId).banned);
   const tr = useT();
 
   return (

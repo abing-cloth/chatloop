@@ -27,6 +27,7 @@ export const ME: User = {
   verified: true,
   followers: 128,
   following: 180,
+  admin: true,
 };
 
 export const SEED_USERS: User[] = [

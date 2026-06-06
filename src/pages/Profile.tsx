@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, BarChart3, Camera, Grid3x3, ImageIcon, LogOut, MessageCircle, Pencil, Play, Settings as SettingsIcon, Share2, ShieldCheck, Store } from "lucide-react";
+import { ArrowLeft, Ban, BarChart3, Camera, Grid3x3, ImageIcon, LogOut, MessageCircle, Pencil, Play, Settings as SettingsIcon, Share2, ShieldCheck, Store } from "lucide-react";
 import { PostCard } from "../components/PostCard";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { UserListModal } from "../components/UserListModal";
@@ -28,6 +28,8 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
   const following = useStore((s) => s.followingIds);
   const toggleFollow = useStore((s) => s.toggleFollow);
   const startChat = useStore((s) => s.startChat);
+  const toggleBlock = useStore((s) => s.toggleBlock);
+  const isBlocked = useStore((s) => s.blockedIds.includes(target.id));
   const followerCount = useStore((s) => s.followerCount(target.id));
   const followingCount = useStore((s) => s.followingCount(target.id));
   const tr = useT();
@@ -130,6 +132,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
                 <button onClick={() => toggleFollow(target.id)} className={cn("rounded-full px-5 py-2 text-sm font-semibold transition", isFollowing ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700")}>{isFollowing ? tr("common.following") : tr("common.follow")}</button>
                 <button onClick={() => { startChat(target.id); onNavigate("messages"); }} title="Pesan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><MessageCircle size={18} /></button>
                 <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
+                <button onClick={() => toggleBlock(target.id)} title={isBlocked ? "Buka blokir" : "Blokir"} className={cn("grid h-10 w-10 place-items-center rounded-full border", isBlocked ? "border-red-300 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/40" : "border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300")}><Ban size={16} /></button>
               </div>
             )}
           </div>

@@ -1,21 +1,37 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useStore } from "../lib/store";
-import { cn } from "../lib/utils";
+import { cn, fileToDataUrl } from "../lib/utils";
 import type { Story } from "../lib/types";
 
+const DAY = 24 * 60 * 60 * 1000;
+
 export function Stories() {
-  const stories = useStore((s) => s.stories);
+  const allStories = useStore((s) => s.stories);
   const me = useStore((s) => s.me());
   const user = useStore((s) => s.user);
+  const blocked = useStore((s) => s.blockedIds);
   const markSeen = useStore((s) => s.markStorySeen);
+  const addStory = useStore((s) => s.addStory);
   const [active, setActive] = useState<Story | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // hanya status < 24 jam & bukan dari pengguna diblokir
+  const stories = allStories.filter(
+    (st) => Date.now() - st.createdAt < DAY && !blocked.includes(st.userId) && !user(st.userId).banned
+  );
+
+  async function onAdd(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) addStory(await fileToDataUrl(f));
+    e.target.value = "";
+  }
 
   return (
     <>
       <div className="flex gap-3 overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden dark:border-zinc-800 dark:bg-zinc-900">
         {/* Your story */}
-        <button className="flex w-16 shrink-0 flex-col items-center gap-1">
+        <button onClick={() => fileRef.current?.click()} className="flex w-16 shrink-0 flex-col items-center gap-1">
           <div className="relative">
             <img
               src={me.avatar}
@@ -28,6 +44,7 @@ export function Stories() {
           </div>
           <span className="truncate text-xs text-zinc-600">Cerita Anda</span>
         </button>
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={onAdd} />
 
         {stories.map((st) => {
           const u = user(st.userId);

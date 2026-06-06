@@ -109,6 +109,7 @@ interface State {
   theme: Theme;
   savedPostIds: string[];
   followingIds: string[];
+  blockedIds: string[];
   isAuthed: boolean;
   settings: Settings;
   view: View;
@@ -198,6 +199,9 @@ interface State {
   toggleCommentLike: (postId: string, commentId: string) => void;
 
   markStorySeen: (id: string) => void;
+  addStory: (image: string) => void;
+  toggleBlock: (userId: string) => void;
+  banUser: (userId: string, banned: boolean) => void;
   updateProfile: (data: Partial<Pick<User, "bio" | "avatar" | "username" | "cover">>) => void;
   lastNameChange: number | null;
   tryRename: (name: string) => { ok: boolean; msg: string };
@@ -232,6 +236,7 @@ export const useStore = create<State>()(
       theme: "light",
       savedPostIds: [],
       followingIds: [],
+      blockedIds: [],
       isAuthed: false,
       settings: DEFAULT_SETTINGS,
       view: "feed",
@@ -722,6 +727,28 @@ export const useStore = create<State>()(
           stories: s.stories.map((st) => (st.id === id ? { ...st, seen: true } : st)),
         })),
 
+      addStory: (image) =>
+        set((s) => ({
+          stories: [
+            { id: uid("st"), userId: s.currentUserId, image, createdAt: Date.now(), seen: true },
+            ...s.stories,
+          ],
+        })),
+
+      toggleBlock: (userId) =>
+        set((s) => ({
+          blockedIds: s.blockedIds.includes(userId)
+            ? s.blockedIds.filter((id) => id !== userId)
+            : [userId, ...s.blockedIds],
+          // berhenti mengikuti saat memblokir
+          followingIds: s.blockedIds.includes(userId) ? s.followingIds : s.followingIds.filter((id) => id !== userId),
+        })),
+
+      banUser: (userId, banned) =>
+        set((s) => ({
+          users: s.users.map((u) => (u.id === userId ? { ...u, banned } : u)),
+        })),
+
       updateProfile: (data) =>
         set((s) => ({
           users: s.users.map((u) =>
@@ -780,6 +807,7 @@ export const useStore = create<State>()(
           theme: s.theme,
           savedPostIds: [],
           followingIds: [],
+          blockedIds: [],
           isAuthed: true,
         })),
     }),

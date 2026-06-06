@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   BadgeCheck,
+  Ban,
   Bell,
   Download,
   Fingerprint,
@@ -9,6 +10,7 @@ import {
   LogOut,
   Moon,
   RotateCcw,
+  ShieldAlert,
   ShieldCheck,
   UserCog,
   X,
@@ -29,6 +31,10 @@ export function Settings() {
   const logout = useStore((s) => s.logout);
   const reset = useStore((s) => s.resetAll);
   const me = useStore((s) => s.me());
+  const blockedIds = useStore((s) => s.blockedIds);
+  const toggleBlock = useStore((s) => s.toggleBlock);
+  const userById = useStore((s) => s.user);
+  const navigate = useStore((s) => s.navigate);
   const tr = useT();
 
   const [pinModal, setPinModal] = useState(false);
@@ -196,7 +202,40 @@ export function Settings() {
       <Section icon={<ShieldCheck size={18} />} title={tr("set.privacy")}>
         <Toggle k="privateAccount" label="Akun privat" desc="Hanya pengikut yang bisa melihat postinganmu" s={settings} set={setSetting} />
         <Toggle k="showActivity" label="Status aktivitas" desc="Tampilkan saat kamu sedang aktif" s={settings} set={setSetting} />
+        <div className="px-1 py-2">
+          <div className="flex items-center gap-2">
+            <Ban size={16} className="text-red-500" />
+            <p className="text-sm font-medium">Pengguna diblokir ({blockedIds.length})</p>
+          </div>
+          {blockedIds.length === 0 ? (
+            <p className="mt-1 text-xs text-zinc-500">Belum ada pengguna yang kamu blokir.</p>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {blockedIds.map((id) => {
+                const u = userById(id);
+                return (
+                  <div key={id} className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2 dark:bg-zinc-800/50">
+                    <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>
+                    <button onClick={() => toggleBlock(id)} className="rounded-lg bg-zinc-200 px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200">Buka blokir</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Section>
+
+      {me.admin && (
+        <Section icon={<ShieldAlert size={18} />} title="Pengelola (Admin)">
+          <div className="px-1 py-1">
+            <p className="mb-3 text-sm text-zinc-500">Kelola pengguna ChatLoop demi keamanan & kenyamanan — blokir akun yang melanggar.</p>
+            <button onClick={() => navigate("admin")} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 py-2.5 text-sm font-semibold text-white">
+              <ShieldAlert size={16} /> Buka Panel Admin
+            </button>
+          </div>
+        </Section>
+      )}
 
       <Section icon={<Lock size={18} />} title={tr("set.security")}>
         <Row

@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Search,
   Settings as SettingsIcon,
+  ShieldAlert,
   Store,
   Sun,
   User as UserIcon,
@@ -36,6 +37,7 @@ const NAV = [
   { id: "notifications", icon: Bell },
   { id: "saved", icon: Bookmark },
   { id: "liked", icon: Heart },
+  { id: "admin", icon: ShieldAlert },
   { id: "profile", icon: UserIcon },
   { id: "settings", icon: SettingsIcon },
 ] as const;
@@ -59,6 +61,7 @@ export function Sidebar({
     <aside className="sticky top-20 hidden h-fit w-64 shrink-0 lg:block">
       <nav className="space-y-1">
         {NAV.map((item) => {
+          if (item.id === "admin" && !me.admin) return null;
           const active = view === item.id;
           return (
             <button

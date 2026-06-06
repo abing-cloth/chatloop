@@ -18,6 +18,7 @@ import { Groups } from "./pages/Groups";
 import { Wallet } from "./pages/Wallet";
 import { Insights } from "./pages/Insights";
 import { Liked } from "./pages/Liked";
+import { Admin } from "./pages/Admin";
 import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
@@ -98,6 +99,7 @@ export default function App() {
             {view === "groups" && <Groups />}
             {view === "wallet" && <Wallet />}
             {view === "insights" && <Insights />}
+            {view === "admin" && <Admin />}
             {view === "messages" && <Messages />}
             {view === "notifications" && <Notifications />}
             {view === "saved" && <Saved />}

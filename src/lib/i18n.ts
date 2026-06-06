@@ -42,6 +42,7 @@ const DICT: Record<string, { id: string; en: string }> = {
   "act.comments": { id: "komentar", en: "comments" },
   // liked
   "nav.liked": { id: "Disukai", en: "Liked" },
+  "nav.admin": { id: "Admin", en: "Admin" },
   "liked.empty": { id: "Belum ada postingan yang kamu sukai.", en: "You haven't liked any posts yet." },
   // settings
   "set.title": { id: "Pengaturan", en: "Settings" },
