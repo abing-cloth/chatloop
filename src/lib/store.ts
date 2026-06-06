@@ -4,6 +4,7 @@ import type {
   CartItem,
   Comment,
   Conversation,
+  Draft,
   Group,
   GroupPost,
   LiveStream,
@@ -179,9 +180,9 @@ interface State {
   withdraw: (amount: number) => boolean;
 
   addPost: (text: string, image?: string) => void;
-  postDraft: { text: string; image?: string } | null;
-  savePostDraft: (d: { text: string; image?: string }) => void;
-  clearPostDraft: () => void;
+  drafts: Draft[];
+  saveDraft: (d: { text: string; image?: string }) => void;
+  deleteDraft: (id: string) => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
   addComment: (postId: string, text: string) => void;
@@ -558,10 +559,14 @@ export const useStore = create<State>()(
           ],
         })),
 
-      postDraft: null,
-      savePostDraft: (d) =>
-        set({ postDraft: d.text.trim() || d.image ? d : null }),
-      clearPostDraft: () => set({ postDraft: null }),
+      drafts: [],
+      saveDraft: (d) =>
+        set((s) =>
+          d.text.trim() || d.image
+            ? { drafts: [{ id: uid("dr"), text: d.text, image: d.image, createdAt: Date.now() }, ...s.drafts].slice(0, 20) }
+            : {}
+        ),
+      deleteDraft: (id) => set((s) => ({ drafts: s.drafts.filter((x) => x.id !== id) })),
 
       deletePost: (id) =>
         set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Music2, Play, Plus, Send, Share2, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import type { Reel } from "../lib/types";
 
@@ -22,11 +23,12 @@ export function Reels() {
   const reels = useStore((s) => s.reels);
   const [muted, setMuted] = useState(true);
   const [creating, setCreating] = useState(false);
+  const tr = useT();
 
   return (
     <div className="mx-auto w-full max-w-sm">
       <div className="mb-3 flex items-center justify-between px-1">
-        <h2 className="text-lg font-bold">Reels</h2>
+        <h2 className="text-lg font-bold">{tr("page.reels")}</h2>
         <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90">
           <Plus size={16} /> Buat Reel
         </button>

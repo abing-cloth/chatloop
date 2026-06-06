@@ -185,4 +185,11 @@ export interface WalletTx {
   createdAt: number;
 }
 
+export interface Draft {
+  id: string;
+  text: string;
+  image?: string;
+  createdAt: number;
+}
+
 export type Theme = "light" | "dark";

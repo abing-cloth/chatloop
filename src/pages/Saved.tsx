@@ -1,10 +1,12 @@
 import { Bookmark } from "lucide-react";
 import { PostCard } from "../components/PostCard";
 import { useStore } from "../lib/store";
+import { useT } from "../lib/i18n";
 
 export function Saved() {
   const savedIds = useStore((s) => s.savedPostIds);
   const posts = useStore((s) => s.posts);
+  const tr = useT();
 
   const saved = savedIds
     .map((id) => posts.find((p) => p.id === id))
@@ -13,7 +15,7 @@ export function Saved() {
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <h2 className="flex items-center gap-2 px-1 text-lg font-bold">
-        <Bookmark size={20} className="text-fuchsia-600" /> Tersimpan
+        <Bookmark size={20} className="text-fuchsia-600" /> {tr("nav.saved")}
       </h2>
 
       {saved.length === 0 ? (

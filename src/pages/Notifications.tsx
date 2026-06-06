@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, Radio, UserPlus } from "lucide-react";
 import { useStore } from "../lib/store";
 import { timeAgo } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 interface Notif {
   id: string;
@@ -17,6 +18,7 @@ export function Notifications() {
   const following = useStore((s) => s.followingIds);
   const lives = useStore((s) => s.liveStreams);
   const notifLive = useStore((s) => s.settings.notifLive);
+  const tr = useT();
 
   const notifs: Notif[] = [];
 
@@ -78,7 +80,7 @@ export function Notifications() {
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
-      <h2 className="px-1 text-lg font-bold">Notifikasi</h2>
+      <h2 className="px-1 text-lg font-bold">{tr("page.notifications")}</h2>
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         {notifs.length === 0 ? (
           <div className="p-10 text-center text-zinc-400">

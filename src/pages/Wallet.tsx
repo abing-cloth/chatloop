@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, formatRupiah, timeAgo } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import type { WalletTxType } from "../lib/types";
 
 const TX_META: Record<WalletTxType, { label: string; icon: typeof Plus; color: string }> = {
@@ -25,6 +26,7 @@ export function Wallet() {
   const withdraw = useStore((s) => s.withdraw);
 
   const [modal, setModal] = useState<null | "topup" | "tarik">(null);
+  const tr = useT();
 
   const earnings = tx
     .filter((t) => t.type === "penjualan")
@@ -33,7 +35,7 @@ export function Wallet() {
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <h2 className="flex items-center gap-2 px-1 text-lg font-bold">
-        <WalletIcon size={20} className="text-fuchsia-600" /> Dompet
+        <WalletIcon size={20} className="text-fuchsia-600" /> {tr("page.wallet")}
       </h2>
 
       {/* kartu saldo */}

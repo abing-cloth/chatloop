@@ -3,6 +3,7 @@ import { Bell, BellRing, CalendarClock, Eye, Radio, Video, X } from "lucide-reac
 import { useStore } from "../lib/store";
 import { LiveRoom } from "../components/LiveRoom";
 import { cn, countdown, formatSchedule } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import type { LiveStream } from "../lib/types";
 
 interface HostConfig {
@@ -16,6 +17,7 @@ export function Live() {
   const reminderIds = useStore((s) => s.reminderIds);
   const toggleReminder = useStore((s) => s.toggleReminder);
   const user = useStore((s) => s.user);
+  const tr = useT();
 
   const categories = ["Semua", ...Array.from(new Set(lives.map((l) => l.category)))];
   const [cat, setCat] = useState("Semua");
@@ -38,13 +40,13 @@ export function Live() {
     <div className="mx-auto w-full max-w-2xl space-y-4">
       <div className="flex items-center justify-between px-1">
         <h2 className="flex items-center gap-2 text-lg font-bold">
-          <Radio size={20} className="text-red-500" /> Live
+          <Radio size={20} className="text-red-500" /> {tr("page.live")}
         </h2>
         <button
           onClick={() => setSetup(true)}
           className="flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
         >
-          <Video size={16} /> Mulai Siaran
+          <Video size={16} /> {tr("page.goLive")}
         </button>
       </div>
 

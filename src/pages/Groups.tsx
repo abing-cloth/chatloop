@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Send, Users } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import type { Group } from "../lib/types";
 
@@ -10,13 +11,14 @@ export function Groups() {
   const joined = useStore((s) => s.joinedGroupIds);
   const toggleJoin = useStore((s) => s.toggleJoinGroup);
   const [active, setActive] = useState<Group | null>(null);
+  const tr = useT();
 
   if (active) return <GroupDetail group={active} onBack={() => setActive(null)} />;
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-4">
       <h2 className="flex items-center gap-2 px-1 text-lg font-bold">
-        <Users size={20} className="text-fuchsia-600" /> Grup & Komunitas
+        <Users size={20} className="text-fuchsia-600" /> {tr("page.groups")}
       </h2>
 
       <div className="grid gap-3 sm:grid-cols-2">

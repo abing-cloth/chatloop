@@ -1,6 +1,7 @@
 import { CheckCircle2, Package, PackageCheck, Truck } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, formatRupiah, timeAgo } from "../lib/utils";
+import { useT } from "../lib/i18n";
 import type { OrderStatus } from "../lib/types";
 
 const STEPS: { key: OrderStatus; label: string; icon: typeof Package }[] = [
@@ -19,11 +20,12 @@ const PAYMENT_LABEL: Record<string, string> = {
 export function Orders() {
   const orders = useStore((s) => s.orders);
   const updateOrderStatus = useStore((s) => s.updateOrderStatus);
+  const tr = useT();
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <h2 className="flex items-center gap-2 px-1 text-lg font-bold">
-        <Package size={20} className="text-fuchsia-600" /> Pesanan Saya
+        <Package size={20} className="text-fuchsia-600" /> {tr("page.orders")}
       </h2>
 
       {orders.length === 0 ? (

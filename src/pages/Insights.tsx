@@ -1,6 +1,7 @@
 import { BarChart3, Eye, Heart, MessageCircle, Package, Play, UserPlus } from "lucide-react";
 import { useStore } from "../lib/store";
 import { formatRupiah } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 export function Insights() {
   const me = useStore((s) => s.me());
@@ -9,6 +10,7 @@ export function Insights() {
   const products = useStore((s) => s.products.filter((p) => p.sellerId === me.id));
   const followers = useStore((s) => s.followerCount(me.id));
   const earnings = useStore((s) => s.walletTx.filter((t) => t.type === "penjualan").reduce((n, t) => n + t.amount, 0));
+  const tr = useT();
 
   const totalLikes = posts.reduce((n, p) => n + p.likedBy.length, 0) + reels.reduce((n, r) => n + r.likedBy.length, 0);
   const totalComments = posts.reduce((n, p) => n + p.comments.length, 0);
@@ -30,7 +32,7 @@ export function Insights() {
   return (
     <div className="mx-auto w-full max-w-xl space-y-4">
       <h2 className="flex items-center gap-2 px-1 text-lg font-bold">
-        <BarChart3 size={20} className="text-fuchsia-600" /> Insight Akun
+        <BarChart3 size={20} className="text-fuchsia-600" /> {tr("page.insights")}
       </h2>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

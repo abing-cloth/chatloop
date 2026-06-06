@@ -5,6 +5,7 @@ import { PRODUCT_CATEGORIES } from "../lib/seed";
 import { cn, fileToDataUrl, formatRupiah, timeAgo } from "../lib/utils";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { Stars, StarInput } from "../components/Stars";
+import { useT } from "../lib/i18n";
 import type { Product } from "../lib/types";
 import type { View } from "../components/Sidebar";
 
@@ -26,6 +27,7 @@ export function Shop({
   const wishlist = useStore((s) => s.wishlistIds);
   const toggleWishlist = useStore((s) => s.toggleWishlist);
   const [onlyWishlist, setOnlyWishlist] = useState(false);
+  const tr = useT();
 
   const ratingFor = (productId: string) => {
     const rs = reviews.filter((r) => r.productId === productId);
@@ -57,14 +59,14 @@ export function Shop({
     <div className="mx-auto w-full max-w-3xl space-y-4">
       <div className="flex items-center justify-between px-1">
         <h2 className="flex items-center gap-2 text-lg font-bold">
-          <Store size={20} className="text-fuchsia-600" /> Belanja
+          <Store size={20} className="text-fuchsia-600" /> {tr("page.shop")}
         </h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSelling(true)}
             className="flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
           >
-            <Plus size={16} /> Jual
+            <Plus size={16} /> {tr("page.sell")}
           </button>
           <button
             onClick={() => setOnlyWishlist((v) => !v)}
