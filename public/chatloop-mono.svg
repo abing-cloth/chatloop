@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ChatLoop">
+  <!-- Versi 1 warna; mewarisi warna lewat currentColor -->
+  <path d="M23 37 L14 51 L31 40 Z" fill="currentColor"/>
+  <path d="M32 28 C 26 16 14 16 14 28 C 14 40 26 40 32 28 C 38 16 50 16 50 28 C 50 40 38 40 32 28 Z"
+        fill="none" stroke="currentColor" stroke-width="7.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

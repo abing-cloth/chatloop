@@ -1,0 +1,16 @@
+# Konfigurasi deploy Netlify untuk ChatLoop
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback — semua rute diarahkan ke index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Jangan cache service worker (selalu ambil versi terbaru)
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
