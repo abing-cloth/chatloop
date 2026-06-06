@@ -63,8 +63,11 @@ export interface Message {
   text: string;
   createdAt: number;
   image?: string;
+  audio?: string;
+  duration?: number; // detik (voice note)
   replyToId?: string;
   read?: boolean;
+  reaction?: string; // emoji reaksi
 }
 
 export interface Conversation {

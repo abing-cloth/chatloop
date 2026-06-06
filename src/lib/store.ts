@@ -133,9 +133,10 @@ interface State {
   findByUsername: (username: string) => User | undefined;
 
   toggleTheme: () => void;
-  sendMessage: (userId: string, text: string, opts?: { image?: string; replyToId?: string }) => void;
+  sendMessage: (userId: string, text: string, opts?: { image?: string; replyToId?: string; audio?: string; duration?: number }) => void;
   receiveMessage: (userId: string, text: string) => void;
   deleteMessage: (userId: string, messageId: string) => void;
+  reactMessage: (userId: string, messageId: string, emoji: string) => void;
   markConversationRead: (userId: string) => void;
   archivedChatIds: string[];
   toggleArchiveChat: (userId: string) => void;
@@ -541,6 +542,8 @@ export const useStore = create<State>()(
             text: text.trim(),
             createdAt: Date.now(),
             image: opts?.image,
+            audio: opts?.audio,
+            duration: opts?.duration,
             replyToId: opts?.replyToId,
             read: false,
           };
@@ -571,6 +574,15 @@ export const useStore = create<State>()(
         set((s) => ({
           conversations: s.conversations.map((c) =>
             c.userId === userId ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) } : c
+          ),
+        })),
+
+      reactMessage: (userId, messageId, emoji) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.userId === userId
+              ? { ...c, messages: c.messages.map((m) => (m.id === messageId ? { ...m, reaction: m.reaction === emoji ? undefined : emoji } : m)) }
+              : c
           ),
         })),
 
