@@ -4,6 +4,9 @@ export interface User {
   username: string;
   avatar: string;
   bio?: string;
+  verified?: boolean;
+  phone?: string;
+  email?: string;
 }
 
 export interface Comment {

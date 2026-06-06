@@ -16,6 +16,7 @@ Aplikasi media sosial & chat ala **Facebook / Instagram**. Dibuat dengan React 1
 
 ## ✨ Fitur
 
+- **Keamanan & verifikasi** 🔐 — wajib verifikasi akun via **nomor telepon (kode negara mana pun)** atau **email** dengan kode OTP; akun terverifikasi dapat badge ✓ (OTP disimulasikan di demo — siap disambungkan ke SMS/email asli)
 - **Beranda (Feed)** — postingan teks & foto, urut terbaru
 - **Stories** — bar cerita dengan viewer fullscreen (ala IG)
 - **Jelajahi (Explore)** — grid foto + pencarian, klik untuk buka postingan

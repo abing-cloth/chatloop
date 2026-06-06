@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
-import { Camera, Grid3x3, LogOut, Pencil, Settings as SettingsIcon } from "lucide-react";
+import { Camera, Grid3x3, LogOut, Pencil, Settings as SettingsIcon, ShieldCheck } from "lucide-react";
 import { PostCard } from "../components/PostCard";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 import { useStore } from "../lib/store";
 import { fileToDataUrl } from "../lib/utils";
 import type { View } from "../components/Sidebar";
@@ -106,8 +107,16 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
             </div>
           ) : (
             <div className="mt-4">
-              <h1 className="text-xl font-bold">{me.name}</h1>
+              <h1 className="flex items-center gap-1.5 text-xl font-bold">
+                {me.name}
+                {me.verified && <VerifiedBadge size={18} />}
+              </h1>
               <p className="text-sm text-zinc-500">@{me.username}</p>
+              {me.verified && (
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <ShieldCheck size={12} /> Terverifikasi
+                </span>
+              )}
               {me.bio && <p className="mt-2 text-[15px] text-zinc-700 dark:text-zinc-300">{me.bio}</p>}
             </div>
           )}

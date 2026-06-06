@@ -47,8 +47,14 @@ interface State {
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
   login: (userId: string) => void;
-  register: (data: { name: string; username: string }) => void;
+  register: (data: {
+    name: string;
+    username: string;
+    phone?: string;
+    email?: string;
+  }) => void;
   logout: () => void;
+  findByUsername: (username: string) => User | undefined;
 
   toggleTheme: () => void;
   sendMessage: (userId: string, text: string) => void;
@@ -88,7 +94,12 @@ export const useStore = create<State>()(
 
       login: (userId) => set({ currentUserId: userId, isAuthed: true }),
 
-      register: ({ name, username }) =>
+      findByUsername: (username) =>
+        get().users.find(
+          (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+        ),
+
+      register: ({ name, username, phone, email }) =>
         set((s) => {
           const id = uid("u");
           const clean = username.trim().toLowerCase().replace(/\s+/g, "");
@@ -98,6 +109,9 @@ export const useStore = create<State>()(
             username: clean,
             avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(clean || id)}`,
             bio: "Pengguna baru di ChatLoop 🔄",
+            verified: true, // sudah lolos verifikasi OTP
+            phone,
+            email,
           };
           return {
             users: [...s.users, newUser],

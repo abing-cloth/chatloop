@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
+import { VerifiedBadge } from "./VerifiedBadge";
 import type { Post } from "../lib/types";
 
 export function PostCard({ post }: { post: Post }) {
@@ -41,7 +42,10 @@ export function PostCard({ post }: { post: Post }) {
       <div className="flex items-center gap-3 p-4">
         <img src={author.avatar} alt={author.name} className="h-10 w-10 rounded-full object-cover" />
         <div className="flex-1">
-          <p className="text-sm font-semibold leading-tight">{author.name}</p>
+          <p className="flex items-center gap-1 text-sm font-semibold leading-tight">
+            {author.name}
+            {author.verified && <VerifiedBadge size={15} />}
+          </p>
           <p className="text-xs text-zinc-500">
             @{author.username} · {timeAgo(post.createdAt)}
           </p>
