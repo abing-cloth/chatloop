@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, ArchiveRestore, ArrowLeft, Send } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Send, Trash2 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, timeAgo } from "../lib/utils";
 import { EmojiPicker } from "../components/EmojiPicker";
+import { MentionText } from "../components/MentionText";
+
+const REPLIES = ["Oke siap! 👍", "Wah menarik 😄", "Hehe iya bener", "Mantap! 🔥", "Nanti aku kabari ya", "😂😂😂", "Setuju banget!", "Makasih ya 🙏", "Boleh, gas!", "Wkwk iya juga"];
 
 export function Messages() {
   const conversations = useStore((s) => s.conversations);
   const user = useStore((s) => s.user);
+  const users = useStore((s) => s.users);
   const me = useStore((s) => s.currentUserId);
   const sendMessage = useStore((s) => s.sendMessage);
+  const receiveMessage = useStore((s) => s.receiveMessage);
+  const deleteMessage = useStore((s) => s.deleteMessage);
   const activeChatUserId = useStore((s) => s.activeChatUserId);
   const clearActiveChat = useStore((s) => s.clearActiveChat);
   const archived = useStore((s) => s.archivedChatIds);
@@ -19,7 +25,16 @@ export function Messages() {
   );
   const [showArchived, setShowArchived] = useState(false);
   const [text, setText] = useState("");
+  const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  const mentionMatch = text.match(/@([a-zA-Z0-9_.]*)$/);
+  const mentionList = mentionMatch
+    ? users.filter((u) => u.id !== me).filter((u) => {
+        const q = mentionMatch[1].toLowerCase();
+        return u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+      }).slice(0, 5)
+    : [];
 
   const visible = conversations.filter((c) =>
     showArchived ? archived.includes(c.userId) : !archived.includes(c.userId)
@@ -37,12 +52,23 @@ export function Messages() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [active?.messages.length, activeId]);
+  }, [active?.messages.length, activeId, typing]);
 
   function send() {
     if (!text.trim() || !activeId) return;
-    sendMessage(activeId, text);
+    const to = activeId;
+    sendMessage(to, text);
     setText("");
+    // simulasi lawan bicara mengetik lalu membalas
+    setTyping(true);
+    setTimeout(() => {
+      receiveMessage(to, REPLIES[Math.floor(Math.random() * REPLIES.length)]);
+      setTyping(false);
+    }, 1600);
+  }
+
+  function pickMention(username: string) {
+    setText(text.replace(/@[a-zA-Z0-9_.]*$/, `@${username} `));
   }
 
   return (
@@ -83,7 +109,10 @@ export function Messages() {
                   activeId === c.userId && "bg-fuchsia-50 dark:bg-fuchsia-950/40"
                 )}
               >
-                <img src={u.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                <div className="relative shrink-0">
+                  <img src={u.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 dark:border-zinc-900" />
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate text-sm font-semibold">{u.name}</p>
@@ -116,16 +145,13 @@ export function Messages() {
             >
               <ArrowLeft size={20} />
             </button>
-            <img
-              src={user(active.userId).avatar}
-              alt=""
-              className="h-9 w-9 rounded-full object-cover"
-            />
+            <div className="relative">
+              <img src={user(active.userId).avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 dark:border-zinc-900" />
+            </div>
             <div>
-              <p className="text-sm font-semibold leading-tight">
-                {user(active.userId).name}
-              </p>
-              <p className="text-xs text-emerald-500">Aktif sekarang</p>
+              <p className="text-sm font-semibold leading-tight">{user(active.userId).name}</p>
+              <p className="text-xs text-emerald-500">{typing ? "sedang mengetik…" : "Aktif sekarang"}</p>
             </div>
           </div>
 
@@ -133,7 +159,16 @@ export function Messages() {
             {active.messages.map((m) => {
               const mine = m.fromId === me;
               return (
-                <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
+                <div key={m.id} className={cn("group flex items-center gap-1.5", mine ? "justify-end" : "justify-start")}>
+                  {mine && (
+                    <button
+                      onClick={() => deleteMessage(active.userId, m.id)}
+                      title="Hapus pesan"
+                      className="rounded-full p-1 text-zinc-400 opacity-0 transition hover:text-red-500 group-hover:opacity-100"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                   <div
                     className={cn(
                       "max-w-[75%] rounded-2xl px-4 py-2 text-[15px] shadow-sm",
@@ -142,15 +177,35 @@ export function Messages() {
                         : "rounded-bl-md bg-white text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
                     )}
                   >
-                    {m.text}
+                    <MentionText text={m.text} />
                   </div>
                 </div>
               );
             })}
+            {typing && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm dark:bg-zinc-800">
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className="h-2 w-2 rounded-full bg-zinc-400" style={{ animation: "loop-bounce 1s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                </div>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
 
-          <div className="flex items-center gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800">
+          <div className="relative flex items-center gap-2 border-t border-zinc-200 p-3 dark:border-zinc-800">
+            {mentionList.length > 0 && (
+              <div className="absolute bottom-full left-3 mb-2 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
+                {mentionList.map((u) => (
+                  <button key={u.id} onClick={() => pickMention(u.username)} className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <img src={u.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                    <span className="text-sm font-medium">{u.name}</span>
+                    <span className="ml-auto text-xs text-zinc-400">@{u.username}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex flex-1 items-center gap-1 rounded-full bg-zinc-100 px-3 focus-within:ring-2 focus-within:ring-fuchsia-300 dark:bg-zinc-800">
               <input
                 value={text}

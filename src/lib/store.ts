@@ -134,6 +134,8 @@ interface State {
 
   toggleTheme: () => void;
   sendMessage: (userId: string, text: string) => void;
+  receiveMessage: (userId: string, text: string) => void;
+  deleteMessage: (userId: string, messageId: string) => void;
   archivedChatIds: string[];
   toggleArchiveChat: (userId: string) => void;
   activeChatUserId: string | null;
@@ -549,6 +551,24 @@ export const useStore = create<State>()(
               : [{ userId, messages: [msg] }, ...s.conversations],
           };
         }),
+
+      receiveMessage: (userId, text) =>
+        set((s) => {
+          const msg = { id: uid("m"), fromId: userId, text, createdAt: Date.now() };
+          const exists = s.conversations.some((c) => c.userId === userId);
+          return {
+            conversations: exists
+              ? s.conversations.map((c) => (c.userId === userId ? { ...c, messages: [...c.messages, msg] } : c))
+              : [{ userId, messages: [msg] }, ...s.conversations],
+          };
+        }),
+
+      deleteMessage: (userId, messageId) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.userId === userId ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) } : c
+          ),
+        })),
 
       addPost: (text, image) =>
         set((s) => ({
