@@ -18,7 +18,9 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
+        // relatif terhadap lokasi manifest → benar di root (Netlify/Vercel)
+        // maupun sub-path (GitHub Pages: /<repo>/)
+        start_url: ".",
         lang: "id",
         icons: [
           {
