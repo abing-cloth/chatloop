@@ -38,6 +38,10 @@ export function countdown(ts: number): string {
   return `${m} menit lagi`;
 }
 
+/** URL aset di folder public yang sadar base path (cocok untuk GitHub Pages sub-folder). */
+export const asset = (path: string): string =>
+  `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
+
 export function formatRupiah(n: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",

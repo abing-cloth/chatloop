@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CheckCircle2, Download, Share, SquarePlus, X } from "lucide-react";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
-import { cn } from "../lib/utils";
+import { asset, cn } from "../lib/utils";
 
 export function InstallButton({
   className,
@@ -54,7 +54,7 @@ export function InstallButton({
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-lg font-bold">
-                <img src="/chatloop.svg" alt="" className="h-7 w-7" /> Pasang ChatLoop
+                <img src={asset("chatloop.svg")} alt="" className="h-7 w-7" /> Pasang ChatLoop
               </h3>
               <button
                 onClick={() => setShowHelp(false)}
