@@ -67,8 +67,9 @@ export function applyBodySkin(
   layer.width = W; layer.height = H;
   lctx.clearRect(0, 0, W, H);
   lctx.drawImage(buf, 0, 0, W, H);
-  if (color.toLowerCase() !== "#ffffff") {
-    lctx.globalCompositeOperation = "source-atop"; lctx.globalAlpha = 0.28; lctx.fillStyle = color;
+  const tA = 0.22 * tintStrength(color);
+  if (tA > 0.01) {
+    lctx.globalCompositeOperation = "source-atop"; lctx.globalAlpha = tA; lctx.fillStyle = color;
     lctx.fillRect(0, 0, W, H); lctx.globalAlpha = 1; lctx.globalCompositeOperation = "source-over";
   }
   lctx.globalCompositeOperation = "destination-in";
@@ -181,6 +182,15 @@ const LBROW = [336, 296, 334, 293, 300];
 function hexA(hex: string, a: number) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/** Seberapa "berwarna" tint dibanding putih (0 = putih → nyaris tak mewarnai, 1 = kuat).
+ *  Mencegah tint near-white (mis. #fff5f2) memucatkan kulit saat di-overlay. */
+export function tintStrength(hex: string) {
+  if (!hex || hex[0] !== "#") return 0;
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return Math.min(1, (255 - Math.min(r, g, b)) / 70);
 }
 
 /** Riasan: lipstik, blush, eyeshadow, eyeliner, alis — pakai 468 titik wajah. */
@@ -296,9 +306,8 @@ function blendSkin(ctx: CanvasRenderingContext2D, source: CanvasImageSource, g: 
   const fctx = fbuf.getContext("2d"); if (!fctx) return;
   fctx.clearRect(0, 0, fbuf.width, fbuf.height);
   fctx.drawImage(buf, x0, y0, fw, fh, 0, 0, fbuf.width, fbuf.height);
-  fctx.globalAlpha = color.toLowerCase() === "#ffffff" ? Math.min(0.3, strength * 0.55) : 0.4;
-  fctx.fillStyle = color; fctx.fillRect(0, 0, fbuf.width, fbuf.height);
-  fctx.globalAlpha = 1;
+  const tA = Math.min(0.28, strength * 0.5) * tintStrength(color);
+  if (tA > 0.01) { fctx.globalAlpha = tA; fctx.fillStyle = color; fctx.fillRect(0, 0, fbuf.width, fbuf.height); fctx.globalAlpha = 1; }
   fctx.globalCompositeOperation = "destination-in";
   const cx2 = fbuf.width / 2, cy2 = fbuf.height / 2, rr = Math.min(cx2, cy2);
   const grd = fctx.createRadialGradient(cx2, cy2, rr * 0.1, cx2, cy2, rr);

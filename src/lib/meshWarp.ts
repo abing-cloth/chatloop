@@ -61,6 +61,9 @@ function triangulate(points: P[]): number[][] {
 function drawTri(ctx: CanvasRenderingContext2D, img: CanvasImageSource, s0: P, s1: P, s2: P, d0: P, d1: P, d2: P) {
   const denom = (s1.x - s0.x) * (s2.y - s0.y) - (s2.x - s0.x) * (s1.y - s0.y);
   if (Math.abs(denom) < 1e-6) return;
+  // guard anti-"hancur": jangan gambar segitiga tujuan yang terbalik (orientasi flip) atau gepeng
+  const ddenom = (d1.x - d0.x) * (d2.y - d0.y) - (d2.x - d0.x) * (d1.y - d0.y);
+  if (Math.abs(ddenom) < 1e-6 || (ddenom > 0) !== (denom > 0)) return;
   ctx.save();
   ctx.beginPath(); ctx.moveTo(d0.x, d0.y); ctx.lineTo(d1.x, d1.y); ctx.lineTo(d2.x, d2.y); ctx.closePath(); ctx.clip();
   const a = ((d1.x - d0.x) * (s2.y - s0.y) - (d2.x - d0.x) * (s1.y - s0.y)) / denom;
@@ -90,14 +93,22 @@ export function reshapeFace(ctx: CanvasRenderingContext2D, img: CanvasImageSourc
   const ringStart = pts.length;
   for (let k = 0; k < RING_N; k++) { const a = (k / RING_N) * Math.PI * 2; pts.push({ x: cx + Math.cos(a) * faceW * 0.92, y: cy + Math.sin(a) * faceH * 1.02 }); kinds.push("ring"); }
   const rEyeC = mid(Pt(33), Pt(133)), lEyeC = mid(Pt(263), Pt(362)), mouthC = mid(Pt(13), Pt(14)), noseC = Pt(1);
-  const slim = prm.slim ?? 0, vline = prm.vline ?? 0, eF = (prm.eye ?? 1) - 1, lF = (prm.lip ?? 1) - 1, nF = 1 - (prm.nose ?? 1);
+  // batasi kekuatan agar segitiga tak terbalik -> tak "hancur"
+  const slim = Math.min(0.18, prm.slim ?? 0), vline = Math.min(0.18, prm.vline ?? 0);
+  const eF = Math.min(0.22, (prm.eye ?? 1) - 1), lF = Math.min(0.22, (prm.lip ?? 1) - 1), nF = Math.min(0.22, 1 - (prm.nose ?? 1));
+  const cap = faceW * 0.1; // pergeseran maks tiap titik (cegah titik melompati wajah)
+  const clamp = (p: P, x: number, y: number): P => {
+    let dx = x - p.x, dy = y - p.y; const m = Math.hypot(dx, dy);
+    if (m > cap) { dx = dx / m * cap; dy = dy / m * cap; }
+    return { x: p.x + dx, y: p.y + dy };
+  };
   const dst = pts.map((p, i) => {
     const k = kinds[i];
-    if (k === "oval") { const w = Math.pow(Math.max(0, (p.y - top) / faceH), 1.2); return { x: p.x + (cx - p.x) * slim * w, y: p.y - vline * faceH * w * 0.4 }; }
-    if (k === "reye") return { x: p.x + (p.x - rEyeC.x) * eF, y: p.y + (p.y - rEyeC.y) * eF };
-    if (k === "leye") return { x: p.x + (p.x - lEyeC.x) * eF, y: p.y + (p.y - lEyeC.y) * eF };
-    if (k === "lip") return { x: p.x + (p.x - mouthC.x) * lF * 0.6, y: p.y + (p.y - mouthC.y) * lF };
-    if (k === "nose") return { x: p.x + (noseC.x - p.x) * nF, y: p.y + (noseC.y - p.y) * nF };
+    if (k === "oval") { const w = Math.pow(Math.max(0, (p.y - top) / faceH), 1.2); return clamp(p, p.x + (cx - p.x) * slim * w, p.y - vline * faceH * w * 0.4); }
+    if (k === "reye") return clamp(p, p.x + (p.x - rEyeC.x) * eF, p.y + (p.y - rEyeC.y) * eF);
+    if (k === "leye") return clamp(p, p.x + (p.x - lEyeC.x) * eF, p.y + (p.y - lEyeC.y) * eF);
+    if (k === "lip") return clamp(p, p.x + (p.x - mouthC.x) * lF * 0.6, p.y + (p.y - mouthC.y) * lF);
+    if (k === "nose") return clamp(p, p.x + (noseC.x - p.x) * nF, p.y + (noseC.y - p.y) * nF);
     return p; // ring tetap
   });
   void ringStart;

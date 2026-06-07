@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, tintStrength, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 import { loadGender, detectGender } from "../lib/genderDetect";
 
 export type GenderMode = "auto" | "cewek" | "cowok";
@@ -183,10 +183,9 @@ export function LiveCamera({
       const fctx = fbuf.getContext("2d"); if (!fctx) return;
       fctx.clearRect(0, 0, fbuf.width, fbuf.height);
       fctx.drawImage(buf, x0, y0, fw, fh, 0, 0, fbuf.width, fbuf.height); // kulit halus+cerah
-      // tint warna kulit (lembut)
-      fctx.globalAlpha = color.toLowerCase() === "#ffffff" ? Math.min(0.3, strength * 0.55) : 0.4;
-      fctx.fillStyle = color; fctx.fillRect(0, 0, fbuf.width, fbuf.height);
-      fctx.globalAlpha = 1;
+      // tint warna kulit (lembut) — kekuatan ikut seberapa berwarna tint (near-white tak memucatkan)
+      const tA = Math.min(0.28, strength * 0.5) * tintStrength(color);
+      if (tA > 0.01) { fctx.globalAlpha = tA; fctx.fillStyle = color; fctx.fillRect(0, 0, fbuf.width, fbuf.height); fctx.globalAlpha = 1; }
       // mask feather elips -> tepi memudar (tidak ada lingkaran keras)
       fctx.globalCompositeOperation = "destination-in";
       const cx2 = fbuf.width / 2, cy2 = fbuf.height / 2, rr = Math.min(cx2, cy2);
