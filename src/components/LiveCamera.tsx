@@ -52,6 +52,7 @@ export function LiveCamera({
   genderMode = "auto",
   intensity = 1,
   background = "none",
+  bgImage,
   effect,
   facing,
   onReady,
@@ -60,7 +61,8 @@ export function LiveCamera({
   filterCss: string;
   genderMode?: GenderMode;
   intensity?: number; // 0..1.5 kekuatan keseluruhan beauty
-  background?: string; // none|blur|hologram|studio
+  background?: string; // none|blur|hologram|studio|image
+  bgImage?: string | null; // dataURL latar custom (mode image)
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -104,6 +106,7 @@ export function LiveCamera({
   const detectedRef = useRef<"male" | "female" | null>(null);
   const intenRef = useRef(intensity);
   const bgRef = useRef(background);
+  const bgImgRef = useRef<HTMLImageElement | null>(null);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
   glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity; bgRef.current = background;
@@ -127,6 +130,14 @@ export function LiveCamera({
     getFaceLandmarker().then((lm) => { lmRef.current = lm; });
     getSelfieSegmenter().then((s) => { segRef.current = s; });
   }, []);
+
+  // muat gambar latar custom
+  useEffect(() => {
+    if (!bgImage) { bgImgRef.current = null; return; }
+    const img = new Image();
+    img.onload = () => { bgImgRef.current = img; };
+    img.src = bgImage;
+  }, [bgImage]);
 
   // auto-deteksi gender (cewek/cowok) tiap ~2 detik saat mode "auto"
   useEffect(() => {
@@ -286,7 +297,8 @@ export function LiveCamera({
       const haveMask = !!maskRef.current && maskRef.current.width > 0;
       // 0) ganti latar (Background)
       if (bgRef.current !== "none" && haveMask) {
-        applyBackground(ctx, v, maskRef.current!, W, H, bgRef.current, bufRef.current!);
+        const bi = bgImgRef.current;
+        applyBackground(ctx, v, maskRef.current!, W, H, bgRef.current, bufRef.current!, bi, bi?.naturalWidth || 0, bi?.naturalHeight || 0);
       }
       // 1) kulit seluruh badan
       if (bodyRef.current > 0 && I > 0.02 && haveMask) {

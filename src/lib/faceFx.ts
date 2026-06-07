@@ -80,8 +80,14 @@ export function applyBodySkin(
   ctx.globalAlpha = 1;
 }
 
-/** Ganti latar (Background): orang dipertahankan via mask, latar diganti. mode: blur/studio/hologram. */
-export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement, W: number, H: number, mode: string, buf: HTMLCanvasElement) {
+// gambar `img` menutupi WxH (cover-fit)
+function drawCover(ctx: CanvasRenderingContext2D, img: CanvasImageSource, iw: number, ih: number, W: number, H: number) {
+  const s = Math.max(W / iw, H / ih), dw = iw * s, dh = ih * s;
+  ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+}
+
+/** Ganti latar (Background): orang dipertahankan via mask, latar diganti. mode: blur/studio/hologram/image. */
+export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement, W: number, H: number, mode: string, buf: HTMLCanvasElement, bgImg?: CanvasImageSource | null, bgW = 0, bgH = 0) {
   const bctx = buf.getContext("2d"); if (!bctx) return;
   // layer orang (sumber di-mask)
   buf.width = W; buf.height = H;
@@ -91,7 +97,11 @@ export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasIma
   bctx.drawImage(maskCanvas, 0, 0, W, H);
   bctx.globalCompositeOperation = "source-over";
   // gambar latar baru
-  if (mode === "blur") {
+  if (mode === "image" && bgImg && bgW && bgH) {
+    drawCover(ctx, bgImg, bgW, bgH, W, H);
+  } else if (mode === "image") {
+    ctx.save(); ctx.filter = `blur(${Math.max(6, W * 0.03)}px)`; ctx.drawImage(source, 0, 0, W, H); ctx.filter = "none"; ctx.restore();
+  } else if (mode === "blur") {
     ctx.save(); ctx.filter = `blur(${Math.max(6, W * 0.03)}px) brightness(0.92)`; ctx.drawImage(source, 0, 0, W, H); ctx.filter = "none"; ctx.restore();
   } else if (mode === "studio") {
     const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#2b2b40"); g.addColorStop(1, "#101018");

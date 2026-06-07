@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
-import { cn } from "../lib/utils";
+import { cn, fileToDataUrl } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
 import { FILTERS, FILTER_CATEGORIES, filterByKey } from "../lib/filters";
 import type { LiveStream } from "../lib/types";
@@ -49,6 +49,7 @@ export function LiveRoom({
   const [genderMode, setGenderMode] = useState<GenderMode>("auto");
   const [intensity, setIntensity] = useState(1);
   const [bg, setBg] = useState("none");
+  const [bgImage, setBgImage] = useState<string | null>(null);
   const [cat, setCat] = useState<string>(FILTER_CATEGORIES[0]);
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
@@ -57,6 +58,13 @@ export function LiveRoom({
   const endRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragId = useRef<number | null>(null);
+  const bgFileRef = useRef<HTMLInputElement>(null);
+
+  async function pickBg(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) { setBgImage(await fileToDataUrl(f)); setBg("image"); }
+    e.target.value = "";
+  }
 
   const fltDef = filterByKey(filter);
   const filterCss = fltDef.filterCss ?? "none";
@@ -94,7 +102,7 @@ export function LiveRoom({
     } catch { /* */ }
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity, bg })); } catch { /* */ }
+    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity, bg: bg === "image" ? "none" : bg })); } catch { /* */ }
   }, [filter, ar, genderMode, intensity, bg]);
 
   // geser stiker
@@ -139,7 +147,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -246,6 +254,8 @@ export function LiveRoom({
               {([["none", "Asli"], ["blur", "Blur"], ["hologram", "Hologram"], ["studio", "Studio"]] as const).map(([b, lbl]) => (
                 <button key={b} onClick={() => setBg(b)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === b ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{lbl}</button>
               ))}
+              <button onClick={() => bgFileRef.current?.click()} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === "image" ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>📷 Foto</button>
+              <input ref={bgFileRef} type="file" accept="image/*" hidden onChange={pickBg} />
             </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>
