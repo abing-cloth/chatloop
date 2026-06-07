@@ -48,6 +48,7 @@ export function LiveRoom({
   const [efekTab, setEfekTab] = useState<"filter" | "wajah">("filter");
   const [genderMode, setGenderMode] = useState<GenderMode>("auto");
   const [intensity, setIntensity] = useState(1);
+  const [bg, setBg] = useState("none");
   const [cat, setCat] = useState<string>(FILTER_CATEGORIES[0]);
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
@@ -89,11 +90,12 @@ export function LiveRoom({
       if (p.ar) setAr(p.ar);
       if (p.genderMode) setGenderMode(p.genderMode);
       if (typeof p.intensity === "number") setIntensity(p.intensity);
+      if (p.bg) setBg(p.bg);
     } catch { /* */ }
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity })); } catch { /* */ }
-  }, [filter, ar, genderMode, intensity]);
+    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity, bg })); } catch { /* */ }
+  }, [filter, ar, genderMode, intensity, bg]);
 
   // geser stiker
   useEffect(() => {
@@ -137,7 +139,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -237,6 +239,13 @@ export function LiveRoom({
             <div className="mb-2 flex items-center gap-2">
               <span className="text-[11px] text-white/80">✨ Beauty</span>
               <input type="range" min="0" max="1.5" step="0.05" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="flex-1 accent-fuchsia-500" />
+            </div>
+            {/* background / scene */}
+            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <span className="shrink-0 text-[11px] text-white/80">🖼️ Latar</span>
+              {([["none", "Asli"], ["blur", "Blur"], ["hologram", "Hologram"], ["studio", "Studio"]] as const).map(([b, lbl]) => (
+                <button key={b} onClick={() => setBg(b)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === b ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{lbl}</button>
+              ))}
             </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 import { loadGender, detectGender } from "../lib/genderDetect";
 
 export type GenderMode = "auto" | "cewek" | "cowok";
@@ -19,6 +19,8 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string }[] = [
   { key: "revefairycap", label: "Reve Fairy Cap", icon: "🧚" },
   { key: "tramp", label: "Tramp", icon: "🎩" },
   { key: "fusiinos1206", label: "Fusi Inos 1206", icon: "✨" },
+  { key: "matagede", label: "Mata Gede", icon: "👁️" },
+  { key: "balon", label: "Kepala Balon", icon: "🎈" },
 ];
 
 const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -49,6 +51,7 @@ export function LiveCamera({
   vignette = 0,
   genderMode = "auto",
   intensity = 1,
+  background = "none",
   effect,
   facing,
   onReady,
@@ -57,6 +60,7 @@ export function LiveCamera({
   filterCss: string;
   genderMode?: GenderMode;
   intensity?: number; // 0..1.5 kekuatan keseluruhan beauty
+  background?: string; // none|blur|hologram|studio
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -99,9 +103,10 @@ export function LiveCamera({
   const genderModeRef = useRef(genderMode);
   const detectedRef = useRef<"male" | "female" | null>(null);
   const intenRef = useRef(intensity);
+  const bgRef = useRef(background);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
-  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity;
+  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity; bgRef.current = background;
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +230,8 @@ export function LiveCamera({
         return;
       }
       if (k === "fusiinos1206") { magnify(lEyeC.x, lEyeC.y, eyeR, 1.5); magnify(rEyeC.x, rEyeC.y, eyeR, 1.5); magnify(mouth.x, mouth.y, faceW * 0.22, 1.3); return; }
+      if (k === "matagede") { magnify(lEyeC.x, lEyeC.y, eyeR, 1.85); magnify(rEyeC.x, rEyeC.y, eyeR, 1.85); return; }
+      if (k === "balon") { magnify(nose.x, nose.y, faceW * 0.62, 1.5); return; }
     }
 
     interface Geo { angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; cx: number; cy: number; rx: number; ry: number; }
@@ -263,8 +270,9 @@ export function LiveCamera({
       const fem = gm === "cewek" ? 1 : gm === "cowok" ? 0 : (detectedRef.current === "male" ? 0 : 1);
       const I = intenRef.current;
 
-      // kulit seluruh badan (mask orang) dulu
-      if (bodyRef.current > 0 && I > 0.02) {
+      // segmentasi orang (untuk ganti Background &/atau kulit badan)
+      const needSeg = bgRef.current !== "none" || (bodyRef.current > 0 && I > 0.02);
+      if (needSeg) {
         const seg = segRef.current;
         if (seg && fresh) {
           try {
@@ -274,9 +282,15 @@ export function LiveCamera({
             (res as { close?: () => void }).close?.();
           } catch { /* */ }
         }
-        if (maskRef.current && maskRef.current.width > 0) {
-          applyBodySkin(ctx, v, maskRef.current, W, H, Math.min(0.6, bodyRef.current * I), tintRef.current, bufRef.current!, layerRef.current!);
-        }
+      }
+      const haveMask = !!maskRef.current && maskRef.current.width > 0;
+      // 0) ganti latar (Background)
+      if (bgRef.current !== "none" && haveMask) {
+        applyBackground(ctx, v, maskRef.current!, W, H, bgRef.current, bufRef.current!);
+      }
+      // 1) kulit seluruh badan
+      if (bodyRef.current > 0 && I > 0.02 && haveMask) {
+        applyBodySkin(ctx, v, maskRef.current!, W, H, Math.min(0.6, bodyRef.current * I), tintRef.current, bufRef.current!, layerRef.current!);
       }
 
       const effWhite = (whiteRef.current > 0 && I > 0.02) ? Math.min(0.6, Math.max(0.04, whiteRef.current * (0.5 + 0.5 * fem) * I)) : 0;

@@ -80,6 +80,33 @@ export function applyBodySkin(
   ctx.globalAlpha = 1;
 }
 
+/** Ganti latar (Background): orang dipertahankan via mask, latar diganti. mode: blur/studio/hologram. */
+export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement, W: number, H: number, mode: string, buf: HTMLCanvasElement) {
+  const bctx = buf.getContext("2d"); if (!bctx) return;
+  // layer orang (sumber di-mask)
+  buf.width = W; buf.height = H;
+  bctx.clearRect(0, 0, W, H);
+  bctx.drawImage(source, 0, 0, W, H);
+  bctx.globalCompositeOperation = "destination-in";
+  bctx.drawImage(maskCanvas, 0, 0, W, H);
+  bctx.globalCompositeOperation = "source-over";
+  // gambar latar baru
+  if (mode === "blur") {
+    ctx.save(); ctx.filter = `blur(${Math.max(6, W * 0.03)}px) brightness(0.92)`; ctx.drawImage(source, 0, 0, W, H); ctx.filter = "none"; ctx.restore();
+  } else if (mode === "studio") {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#2b2b40"); g.addColorStop(1, "#101018");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  } else if (mode === "hologram") {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#0a2540"); g.addColorStop(0.5, "#1b3a6b"); g.addColorStop(1, "#3a1b6b");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(120,220,255,0.07)";
+    for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
+  }
+  // orang di atas latar
+  ctx.drawImage(buf, 0, 0, W, H);
+}
+
 // ===== Makeup (riasan) =====
 const LIPS_OUTER = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146];
 const LIPS_INNER = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
