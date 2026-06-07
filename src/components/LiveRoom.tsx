@@ -3,7 +3,7 @@ import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, Vide
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
-import { MAKEUP } from "../lib/faceFx";
+import { FILTERS, FILTER_CATEGORIES, filterByKey } from "../lib/filters";
 import type { LiveStream } from "../lib/types";
 
 interface LiveComment { id: number; name: string; avatar: string; text: string }
@@ -15,20 +15,6 @@ const CHATTER = [
   "Mantap, lanjutkan! 💪", "Salam kenal semua 😊", "Wah seru ya 😍",
   "Suaranya jernih banget", "Pertama kali nonton, suka! ❤️", "Bagi tips dong kak",
   "Ditunggu konten berikutnya 🙏", "LFG! 🚀", "Ngakak 🤣", "Auto follow 🔔",
-];
-
-// Filter (nama gaya viral). white=kulit wajah, eye/lip/cheek/nose=ubah fisik (mesh), body=kulit badan, glow=bloom.
-const FILTERS = [
-  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, cheek: 1, nose: 1, body: 0, glow: 0, vignette: 0 },
-  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.22, tint: "#fff5f2", eye: 1.2, lip: 1.08, cheek: 0.94, nose: 0.9, body: 0.16, glow: 0.18, vignette: 0 },
-  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.12, lip: 1.32, cheek: 0.95, nose: 0.92, body: 0.14, glow: 0.16, vignette: 0 },
-  { key: "blueblur", label: "Blue Blur", css: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.14, lip: 1.06, cheek: 0.96, nose: 0.94, body: 0.12, glow: 0.28, vignette: 0.15 },
-  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.12, lip: 1.06, cheek: 0.97, nose: 1, body: 0.1, glow: 0.22, vignette: 0 },
-  { key: "overexposure", label: "Over Exposure", css: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.32, tint: "#ffffff", eye: 1.12, lip: 1.06, cheek: 1, nose: 1, body: 0.24, glow: 0.34, vignette: 0 },
-  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.1, lip: 1.04, cheek: 0.97, nose: 0.95, body: 0.1, glow: 0.12, vignette: 0 },
-  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.35, lip: 1.14, cheek: 0.9, nose: 0.88, body: 0.16, glow: 0.3, vignette: 0.1 },
-  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.26, tint: "#fff4f0", eye: 1.32, lip: 1.2, cheek: 0.9, nose: 0.88, body: 0.2, glow: 0.26, vignette: 0.12 },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, cheek: 1, nose: 1, body: 0, glow: 0, vignette: 0 },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
@@ -62,6 +48,7 @@ export function LiveRoom({
   const [efekTab, setEfekTab] = useState<"filter" | "wajah">("filter");
   const [genderMode, setGenderMode] = useState<GenderMode>("auto");
   const [intensity, setIntensity] = useState(1);
+  const [cat, setCat] = useState<string>(FILTER_CATEGORIES[0]);
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
@@ -70,8 +57,8 @@ export function LiveRoom({
   const stageRef = useRef<HTMLDivElement>(null);
   const dragId = useRef<number | null>(null);
 
-  const fltDef = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
-  const filterCss = fltDef.css ?? "none";
+  const fltDef = filterByKey(filter);
+  const filterCss = fltDef.filterCss ?? "none";
   const whiteOverlay = fltDef.white ?? 0;
   const tint = fltDef.tint ?? "#ffffff";
   const eyeScale = fltDef.eye ?? 1;
@@ -93,6 +80,20 @@ export function LiveRoom({
   }, [users]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [comments.length]);
+
+  // ingat preferensi filter/efek (per perangkat)
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem("loop-live-prefs") || "{}");
+      if (p.filter && filterByKey(p.filter).key === p.filter) { setFilter(p.filter); setCat(filterByKey(p.filter).category); }
+      if (p.ar) setAr(p.ar);
+      if (p.genderMode) setGenderMode(p.genderMode);
+      if (typeof p.intensity === "number") setIntensity(p.intensity);
+    } catch { /* */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity })); } catch { /* */ }
+  }, [filter, ar, genderMode, intensity]);
 
   // geser stiker
   useEffect(() => {
@@ -136,7 +137,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -241,9 +242,17 @@ export function LiveRoom({
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>
               <button onClick={() => setEfekTab("wajah")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "wajah" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Efek Wajah</button>
             </div>
+            {/* tab kategori (ala TikTok) */}
+            {efekTab === "filter" && (
+              <div className="mb-2 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {FILTER_CATEGORIES.map((cc) => (
+                  <button key={cc} onClick={() => setCat(cc)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", cat === cc ? "bg-white text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{cc}</button>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {efekTab === "filter"
-                ? FILTERS.map((f) => (
+                ? FILTERS.filter((f) => f.category === cat).map((f) => (
                     <button key={f.key} onClick={() => setFilter(f.key)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", filter === f.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>{f.label}</button>
                   ))
                 : FACE_EFFECTS.map((a) => (
