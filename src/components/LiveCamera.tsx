@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, type MakeupCfg } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, reshapeFace, needsReshape, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
@@ -26,6 +26,8 @@ export function LiveCamera({
   tint = "#ffffff",
   eyeScale = 1,
   lipScale = 1,
+  cheek = 1,
+  nose = 1,
   bodyStrength = 0,
   makeup,
   glow = 0,
@@ -40,6 +42,8 @@ export function LiveCamera({
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
   lipScale?: number; // berisi bibir (ubah fisik)
+  cheek?: number; // <1 tiruskan pipi (slim/V-line)
+  nose?: number; // <1 perkecil hidung
   bodyStrength?: number; // haluskan+cerahkan kulit seluruh badan (mask orang)
   makeup?: MakeupCfg; // riasan
   glow?: number; // bloom dreamy
@@ -66,13 +70,16 @@ export function LiveCamera({
   const tintRef = useRef(tint);
   const eyeRef = useRef(eyeScale);
   const lipRef = useRef(lipScale);
+  const cheekRef = useRef(cheek);
+  const noseRef = useRef(nose);
   const bodyRef = useRef(bodyStrength);
   const makeupRef = useRef(makeup);
   const glowRef = useRef(glow);
   const vigRef = useRef(vignette);
+  const rbufRef = useRef<HTMLCanvasElement | null>(null);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
-  glowRef.current = glow; vigRef.current = vignette;
+  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose;
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +110,7 @@ export function LiveCamera({
     if (!maskRef.current) maskRef.current = document.createElement("canvas");
     if (!layerRef.current) layerRef.current = document.createElement("canvas");
     if (!fbufRef.current) fbufRef.current = document.createElement("canvas");
+    if (!rbufRef.current) rbufRef.current = document.createElement("canvas");
     const buf = bufRef.current, fbuf = fbufRef.current;
 
     // perbesar bagian wajah (liquify) pakai piksel orang itu sendiri -> ubah fisik
@@ -148,11 +156,6 @@ export function LiveCamera({
     }
 
     // ubah fisik: mata besar + bibir berisi
-    function reshape(g: Geo) {
-      if (eyeRef.current > 1) { magnify(g.lEyeC.x, g.lEyeC.y, g.eyeR, eyeRef.current); magnify(g.rEyeC.x, g.rEyeC.y, g.eyeR, eyeRef.current); }
-      if (lipRef.current > 1) magnify(g.mouth.x, g.mouth.y, g.faceW * 0.2, lipRef.current);
-    }
-
     function ellipse(x: number, y: number, rx: number, ry: number, a: number, fill: string) { ctx!.fillStyle = fill; ctx!.beginPath(); ctx!.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx!.fill(); }
     function heartPath(cx: number, cy: number, s: number) { ctx!.beginPath(); ctx!.moveTo(cx, cy + s * 0.35); ctx!.bezierCurveTo(cx + s, cy - s * 0.5, cx + s * 0.55, cy - s, cx, cy - s * 0.35); ctx!.bezierCurveTo(cx - s * 0.55, cy - s, cx - s, cy - s * 0.5, cx, cy + s * 0.35); ctx!.closePath(); }
     function starPath(cx: number, cy: number, r: number) { ctx!.beginPath(); for (let i = 0; i < 10; i++) { const rad = i % 2 === 0 ? r : r * 0.45; const a = (Math.PI / 5) * i - Math.PI / 2; const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad; i === 0 ? ctx!.moveTo(x, y) : ctx!.lineTo(x, y); } ctx!.closePath(); }
@@ -241,18 +244,32 @@ export function LiveCamera({
         }
       }
 
-      const beauty = whiteRef.current > 0 || eyeRef.current > 1 || lipRef.current > 1;
+      const rp: ReshapeParams = {
+        eye: eyeRef.current, lip: lipRef.current, nose: noseRef.current,
+        slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 : 0,
+        vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 : 0,
+      };
+      const beauty = whiteRef.current > 0 || makeupRef.current != null || needsReshape(rp);
       const needFaces = effRef.current !== "none" || beauty;
       const lm = lmRef.current;
       if (needFaces && lm) {
         if (fresh) { try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
+        // 1) kulit wajah + makeup
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
           if (whiteRef.current > 0) blendSkin(g, W, H, whiteRef.current, tintRef.current);
           if (makeupRef.current) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, makeupRef.current, g.faceW);
-          reshape(g);
-          if (effRef.current !== "none") drawEffect(g);
         }
+        // 2) mesh-warp reshape (slim/V-line, mata, hidung, bibir)
+        if (facesRef.current.length && needsReshape(rp)) {
+          const rb = rbufRef.current!, rctx = rb.getContext("2d");
+          if (rctx) {
+            rb.width = W; rb.height = H; rctx.clearRect(0, 0, W, H); rctx.drawImage(c, 0, 0, W, H);
+            for (const face of facesRef.current) reshapeFace(ctx, rb, face as unknown as { x: number; y: number }[], W, H, rp);
+          }
+        }
+        // 3) efek AR
+        if (effRef.current !== "none") for (const face of facesRef.current) drawEffect(geoOf(face, W, H));
       }
       if (glowRef.current > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, glowRef.current, vigRef.current);
     };

@@ -1,7 +1,8 @@
 // Efek wajah bersama (dipakai kamera foto/story): proses kulit + ubah fisik wajah.
 import { getFaceLandmarker } from "./faceLandmarker";
 import { getSelfieSegmenter } from "./selfieSegmenter";
-export { getSelfieSegmenter };
+import { reshapeFace, needsReshape, type ReshapeParams } from "./meshWarp";
+export { getSelfieSegmenter, reshapeFace, needsReshape, type ReshapeParams };
 
 export interface MakeupCfg {
   lip?: string; lipA?: number;       // lipstik warna + opacity
@@ -177,32 +178,15 @@ export async function detectFaces(src: CanvasImageSource & { videoWidth?: number
   catch { return []; }
 }
 
-// liquify lingkaran (perbesar/perkecil bagian wajah pakai piksel sendiri)
-function warp(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, cx: number, cy: number, r: number, factor: number) {
-  if (r < 2 || Math.abs(factor - 1) < 0.02) return;
-  const dw = r * 2 * factor;
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, r * factor * 0.95, 0, Math.PI * 2); ctx.clip();
-  ctx.drawImage(canvas, cx - r, cy - r, r * 2, r * 2, cx - dw / 2, cy - dw / 2, dw, dw);
-  ctx.restore();
-}
-
-interface Geo { faceW: number; nose: XY; mouth: XY; lEyeC: XY; rEyeC: XY; lBrow: XY; rBrow: XY; lCheek: XY; rCheek: XY; eyeR: number; cx: number; cy: number; rx: number; ry: number; }
+interface Geo { faceW: number; cx: number; cy: number; rx: number; ry: number; }
 function geoOf(lm: XY[], W: number, H: number): Geo {
   const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
   const left = P(234), right = P(454), top = P(10), bottom = P(152);
   const faceW = dist(left, right) || dist(P(33), P(263)) * 2.5;
-  const rEyeC = { x: (P(33).x + P(133).x) / 2, y: (P(33).y + P(133).y) / 2 };
-  const lEyeC = { x: (P(263).x + P(362).x) / 2, y: (P(263).y + P(362).y) / 2 };
-  const eyeR = Math.max(dist(P(33), P(133)), dist(P(263), P(362))) * 0.6;
-  const mouth = { x: (P(13).x + P(14).x) / 2, y: (P(13).y + P(14).y) / 2 };
   const cx = (left.x + right.x) / 2, cy = (top.y + bottom.y) / 2;
   const rx = (dist(left, right) / 2) * 1.1, ry = (dist(top, bottom) / 2) * 1.15;
   return {
-    faceW, nose: P(1), mouth, lEyeC, rEyeC, eyeR,
-    lBrow: { x: lEyeC.x, y: lEyeC.y - eyeR * 1.15 },
-    rBrow: { x: rEyeC.x, y: rEyeC.y - eyeR * 1.15 },
-    lCheek: { x: P(330).x, y: P(330).y }, rCheek: { x: P(101).x, y: P(101).y },
+    faceW,
     cx, cy, rx, ry,
   };
 }
@@ -252,13 +236,20 @@ export function renderBeauty(
     const g = geoOf(lm, W, H);
     if (fx.white > 0) blendSkin(ctx, source, g, W, H, fx.white, fx.tint, buf, fbuf);
     if (fx.makeup) applyMakeup(ctx, lm, W, H, fx.makeup, g.faceW);
-    // tiruskan pipi & hidung (perkecil)
-    if (fx.cheek && fx.cheek < 1) { warp(ctx, canvas, g.lCheek.x, g.lCheek.y, g.faceW * 0.26, fx.cheek); warp(ctx, canvas, g.rCheek.x, g.rCheek.y, g.faceW * 0.26, fx.cheek); }
-    if (fx.nose && fx.nose < 1) warp(ctx, canvas, g.nose.x, g.nose.y, g.faceW * 0.2, fx.nose);
-    // pertegas alis & perbesar mata, bibir berisi
-    if (fx.brow && fx.brow > 1) { warp(ctx, canvas, g.lBrow.x, g.lBrow.y, g.eyeR * 0.95, fx.brow); warp(ctx, canvas, g.rBrow.x, g.rBrow.y, g.eyeR * 0.95, fx.brow); }
-    if (fx.eye > 1) { warp(ctx, canvas, g.lEyeC.x, g.lEyeC.y, g.eyeR, fx.eye); warp(ctx, canvas, g.rEyeC.x, g.rEyeC.y, g.eyeR, fx.eye); }
-    if (fx.lip > 1) warp(ctx, canvas, g.mouth.x, g.mouth.y, g.faceW * 0.2, fx.lip);
+  }
+  // ubah fisik: mesh-warp halus (slim/V-line, mata, hidung, bibir) — tanpa artefak lingkaran
+  const rp: ReshapeParams = {
+    eye: fx.eye, lip: fx.lip, nose: fx.nose,
+    slim: fx.cheek && fx.cheek < 1 ? (1 - fx.cheek) * 1.4 : 0,
+    vline: fx.cheek && fx.cheek < 1 ? (1 - fx.cheek) * 0.9 : 0,
+  };
+  if (faces.length && needsReshape(rp)) {
+    const bctx = buf.getContext("2d");
+    if (bctx) {
+      buf.width = W; buf.height = H;
+      bctx.clearRect(0, 0, W, H); bctx.drawImage(canvas, 0, 0, W, H);
+      for (const lm of faces) if (lm && lm.length >= 468) reshapeFace(ctx, buf, lm, W, H, rp);
+    }
   }
   if ((fx.glow ?? 0) > 0 || (fx.vignette ?? 0) > 0) applyGlow(ctx, canvas, W, H, buf, fx.glow ?? 0, fx.vignette ?? 0);
 }
