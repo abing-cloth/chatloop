@@ -1,15 +1,64 @@
 // Efek wajah bersama (dipakai kamera foto/story): proses kulit + ubah fisik wajah.
 import { getFaceLandmarker } from "./faceLandmarker";
+import { getSelfieSegmenter } from "./selfieSegmenter";
+export { getSelfieSegmenter };
 
 export interface BeautyFx {
   filterCss: string;
-  white: number;   // kekuatan proses kulit
+  white: number;   // kekuatan proses kulit (wajah)
   tint: string;    // warna kulit
   eye: number;     // >1 perbesar mata
   lip: number;     // >1 bibir berisi
   cheek?: number;  // <1 tiruskan pipi
   nose?: number;   // <1 perkecil hidung
   brow?: number;   // >1 pertegas alis
+  body?: number;   // kekuatan haluskan+cerahkan kulit SELURUH badan (mask orang)
+}
+
+interface MPMask { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }
+
+/** Isi maskCanvas dgn alpha = probabilitas piksel orang (badan), lalu tutup mask. */
+export function fillMaskCanvas(mask: MPMask, maskCanvas: HTMLCanvasElement) {
+  const w = mask.width, h = mask.height;
+  const arr = mask.getAsFloat32Array();
+  maskCanvas.width = w; maskCanvas.height = h;
+  const mctx = maskCanvas.getContext("2d"); if (!mctx) { mask.close?.(); return; }
+  const img = mctx.createImageData(w, h);
+  const d = img.data;
+  for (let i = 0; i < arr.length; i++) {
+    const a = arr[i];
+    d[i * 4] = 255; d[i * 4 + 1] = 255; d[i * 4 + 2] = 255;
+    d[i * 4 + 3] = a > 0.35 ? Math.round(Math.min(1, a) * 255) : 0;
+  }
+  mctx.putImageData(img, 0, 0);
+  mask.close?.();
+}
+
+/** Haluskan + cerahkan kulit SELURUH badan memakai mask orang (badan + wajah). */
+export function applyBodySkin(
+  ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement,
+  W: number, H: number, strength: number, color: string, buf: HTMLCanvasElement, layer: HTMLCanvasElement,
+) {
+  const bctx = buf.getContext("2d"); if (!bctx) return;
+  buf.width = W; buf.height = H;
+  bctx.filter = `blur(${Math.max(2, W * 0.005)}px) brightness(${(1 + 0.22 * strength).toFixed(3)}) saturate(1.04) contrast(0.98)`;
+  bctx.drawImage(source, 0, 0, W, H);
+  bctx.filter = "none";
+  const lctx = layer.getContext("2d"); if (!lctx) return;
+  layer.width = W; layer.height = H;
+  lctx.clearRect(0, 0, W, H);
+  lctx.drawImage(buf, 0, 0, W, H);
+  if (color.toLowerCase() !== "#ffffff") {
+    lctx.globalCompositeOperation = "source-atop"; lctx.globalAlpha = 0.28; lctx.fillStyle = color;
+    lctx.fillRect(0, 0, W, H); lctx.globalAlpha = 1; lctx.globalCompositeOperation = "source-over";
+  }
+  lctx.globalCompositeOperation = "destination-in";
+  lctx.imageSmoothingEnabled = true;
+  lctx.drawImage(maskCanvas, 0, 0, W, H); // skala mask (256) -> WxH, tepi lembut
+  lctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = Math.min(0.85, 0.5 + 0.4 * strength);
+  ctx.drawImage(layer, 0, 0, W, H);
+  ctx.globalAlpha = 1;
 }
 
 type XY = { x: number; y: number };
@@ -79,14 +128,19 @@ function blendSkin(ctx: CanvasRenderingContext2D, source: CanvasImageSource, g: 
   ctx.globalAlpha = 1;
 }
 
-/** Gambar `source` ke ctx (WxH) dgn filter, lalu proses kulit + ubah fisik per wajah. */
+/** Gambar `source` ke ctx (WxH) dgn filter, proses kulit BADAN (mask) lalu wajah + ubah fisik. */
 export function renderBeauty(
   ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, source: CanvasImageSource,
   W: number, H: number, faces: XY[][], fx: BeautyFx, buf: HTMLCanvasElement, fbuf: HTMLCanvasElement,
+  maskCanvas?: HTMLCanvasElement | null, layer?: HTMLCanvasElement | null,
 ) {
   ctx.filter = fx.filterCss || "none";
   ctx.drawImage(source, 0, 0, W, H);
   ctx.filter = "none";
+  // kulit seluruh badan (mask orang) dulu
+  if (maskCanvas && layer && (fx.body ?? 0) > 0 && maskCanvas.width > 0) {
+    applyBodySkin(ctx, source, maskCanvas, W, H, fx.body!, fx.tint, buf, layer);
+  }
   for (const lm of faces) {
     if (!lm || lm.length < 468) continue;
     const g = geoOf(lm, W, H);

@@ -2,23 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Check, ImagePlus, RefreshCw, RotateCcw, SwitchCamera, X } from "lucide-react";
 import { cn, fileToDataUrl } from "../lib/utils";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { renderBeauty, type BeautyFx } from "../lib/faceFx";
-import type { FaceLandmarker } from "@mediapipe/tasks-vision";
+import { renderBeauty, getSelfieSegmenter, fillMaskCanvas, type BeautyFx } from "../lib/faceFx";
+import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 
 interface Filter extends BeautyFx { key: string; label: string; }
 
 // Nama filter gaya viral + ubah fisik (mata/bibir/pipi/alis/hidung), selaras dgn Live
 const FILTERS: Filter[] = [
-  { key: "normal", label: "Normal", filterCss: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
-  { key: "beautyfilter", label: "Beauty Filter", filterCss: "saturate(1.08)", white: 0.2, tint: "#fff5f2", eye: 1.18, lip: 1.08, cheek: 0.94, nose: 0.9, brow: 1.06 },
-  { key: "beautymouth", label: "Beauty Mouth", filterCss: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.1, lip: 1.3, cheek: 0.95, nose: 0.92, brow: 1.04 },
-  { key: "blueblur", label: "Blue Blur", filterCss: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.12, lip: 1.06, cheek: 0.96, nose: 0.94 },
-  { key: "dontworry", label: "Don't Worry", filterCss: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.1, lip: 1.06, cheek: 0.97 },
-  { key: "overexposure", label: "Over Exposure", filterCss: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.3, tint: "#ffffff", eye: 1.1, lip: 1.05 },
-  { key: "natural111", label: "Natural 111", filterCss: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.08, lip: 1.04, cheek: 0.97, nose: 0.95 },
-  { key: "kindofcute", label: "Kind of Cute", filterCss: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.32, lip: 1.12, cheek: 0.9, nose: 0.88, brow: 1.08 },
-  { key: "fusiinos", label: "Fusi Wajah Inos", filterCss: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0", eye: 1.28, lip: 1.18, cheek: 0.9, nose: 0.88, brow: 1.06 },
-  { key: "bw", label: "B&W", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
+  { key: "normal", label: "Normal", filterCss: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
+  { key: "beautyfilter", label: "Beauty Filter", filterCss: "saturate(1.08)", white: 0.2, tint: "#fff5f2", eye: 1.18, lip: 1.08, cheek: 0.94, nose: 0.9, brow: 1.06, body: 0.16 },
+  { key: "beautymouth", label: "Beauty Mouth", filterCss: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.1, lip: 1.3, cheek: 0.95, nose: 0.92, brow: 1.04, body: 0.14 },
+  { key: "blueblur", label: "Blue Blur", filterCss: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.12, lip: 1.06, cheek: 0.96, nose: 0.94, body: 0.12 },
+  { key: "dontworry", label: "Don't Worry", filterCss: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.1, lip: 1.06, cheek: 0.97, body: 0.1 },
+  { key: "overexposure", label: "Over Exposure", filterCss: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.3, tint: "#ffffff", eye: 1.1, lip: 1.05, body: 0.24 },
+  { key: "natural111", label: "Natural 111", filterCss: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.08, lip: 1.04, cheek: 0.97, nose: 0.95, body: 0.1 },
+  { key: "kindofcute", label: "Kind of Cute", filterCss: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.32, lip: 1.12, cheek: 0.9, nose: 0.88, brow: 1.08, body: 0.16 },
+  { key: "fusiinos", label: "Fusi Wajah Inos", filterCss: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0", eye: 1.28, lip: 1.18, cheek: 0.9, nose: 0.88, brow: 1.06, body: 0.2 },
+  { key: "bw", label: "B&W", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
 ];
 
 export function CameraCapture({
@@ -35,6 +35,9 @@ export function CameraCapture({
   const fileRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const lmRef = useRef<FaceLandmarker | null>(null);
+  const segRef = useRef<ImageSegmenter | null>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const layerRef = useRef<HTMLCanvasElement | null>(null);
   const facesRef = useRef<any[]>([]);
   const rafRef = useRef(0);
   const [facing, setFacing] = useState<"user" | "environment">("user");
@@ -51,8 +54,11 @@ export function CameraCapture({
   const shotRef = useRef<string | null>(shot); shotRef.current = shot;
   const facingRef = useRef(facing); facingRef.current = facing;
 
-  // model wajah
-  useEffect(() => { getFaceLandmarker().then((lm) => { lmRef.current = lm; }); }, []);
+  // model wajah + segmentasi badan
+  useEffect(() => {
+    getFaceLandmarker().then((lm) => { lmRef.current = lm; });
+    getSelfieSegmenter().then((s) => { segRef.current = s; });
+  }, []);
 
   // kamera
   useEffect(() => {
@@ -84,6 +90,8 @@ export function CameraCapture({
   useEffect(() => {
     if (!bufRef.current) bufRef.current = document.createElement("canvas");
     if (!fbufRef.current) fbufRef.current = document.createElement("canvas");
+    if (!maskCanvasRef.current) maskCanvasRef.current = document.createElement("canvas");
+    if (!layerRef.current) layerRef.current = document.createElement("canvas");
     let lastDetect = 0;
     const loop = () => {
       rafRef.current = requestAnimationFrame(loop);
@@ -100,13 +108,23 @@ export function CameraCapture({
       if (c.width !== W) { c.width = W; c.height = H; }
       const f = filterRef.current;
       const css = ((f.filterCss === "none" ? "" : f.filterCss) + (brightRef.current !== 1 ? ` brightness(${brightRef.current})` : "")).trim() || "none";
+      const now = performance.now();
+      const fresh = now - lastDetect > 55;
+      if (fresh) lastDetect = now;
       // deteksi wajah
       const lm = lmRef.current;
-      if (lm) {
-        const now = performance.now();
-        if (now - lastDetect > 55) { lastDetect = now; try { facesRef.current = (lm.detectForVideo(source as HTMLVideoElement, now).faceLandmarks ?? []) as any[]; } catch { /* */ } }
+      if (lm && fresh) { try { facesRef.current = (lm.detectForVideo(source as HTMLVideoElement, now).faceLandmarks ?? []) as any[]; } catch { /* */ } }
+      // segmentasi badan (mask orang)
+      const seg = segRef.current;
+      if (seg && fresh && (f.body ?? 0) > 0) {
+        try {
+          const res = seg.segmentForVideo(source as HTMLVideoElement, now);
+          const mask = res.confidenceMasks?.[0];
+          if (mask) fillMaskCanvas(mask as any, maskCanvasRef.current!);
+          res.close?.();
+        } catch { /* */ }
       }
-      renderBeauty(ctx, c, source, W, H, facesRef.current, { ...f, filterCss: css }, bufRef.current!, fbufRef.current!);
+      renderBeauty(ctx, c, source, W, H, facesRef.current, { ...f, filterCss: css }, bufRef.current!, fbufRef.current!, maskCanvasRef.current, layerRef.current);
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);

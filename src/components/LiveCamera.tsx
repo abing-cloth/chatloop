@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import type { FaceLandmarker } from "@mediapipe/tasks-vision";
+import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin } from "../lib/faceFx";
 
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
@@ -25,16 +26,18 @@ export function LiveCamera({
   tint = "#ffffff",
   eyeScale = 1,
   lipScale = 1,
+  bodyStrength = 0,
   effect,
   facing,
   onReady,
   onError,
 }: {
   filterCss: string;
-  whiteOverlay?: number; // kekuatan proses kulit (haluskan+cerahkan+tint)
+  whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
   lipScale?: number; // berisi bibir (ubah fisik)
+  bodyStrength?: number; // haluskan+cerahkan kulit seluruh badan (mask orang)
   effect: string;
   facing: "user" | "environment";
   onReady?: () => void;
@@ -44,8 +47,11 @@ export function LiveCamera({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bufRef = useRef<HTMLCanvasElement | null>(null);
   const fbufRef = useRef<HTMLCanvasElement | null>(null);
+  const maskRef = useRef<HTMLCanvasElement | null>(null);
+  const layerRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lmRef = useRef<FaceLandmarker | null>(null);
+  const segRef = useRef<ImageSegmenter | null>(null);
   const facesRef = useRef<Pt[][]>([]);
   const rafRef = useRef(0);
   const effRef = useRef(effect);
@@ -54,8 +60,9 @@ export function LiveCamera({
   const tintRef = useRef(tint);
   const eyeRef = useRef(eyeScale);
   const lipRef = useRef(lipScale);
+  const bodyRef = useRef(bodyStrength);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
-  tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale;
+  tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength;
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +79,10 @@ export function LiveCamera({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facing]);
 
-  useEffect(() => { getFaceLandmarker().then((lm) => { lmRef.current = lm; }); }, []);
+  useEffect(() => {
+    getFaceLandmarker().then((lm) => { lmRef.current = lm; });
+    getSelfieSegmenter().then((s) => { segRef.current = s; });
+  }, []);
 
   useEffect(() => {
     const v = videoRef.current, c = canvasRef.current;
@@ -80,6 +90,8 @@ export function LiveCamera({
     const ctx = c.getContext("2d");
     if (!ctx) return;
     if (!bufRef.current) bufRef.current = document.createElement("canvas");
+    if (!maskRef.current) maskRef.current = document.createElement("canvas");
+    if (!layerRef.current) layerRef.current = document.createElement("canvas");
     if (!fbufRef.current) fbufRef.current = document.createElement("canvas");
     const buf = bufRef.current, fbuf = fbufRef.current;
 
@@ -199,12 +211,31 @@ export function LiveCamera({
       ctx.drawImage(v, 0, 0, W, H);
       ctx.filter = "none";
 
+      const now = performance.now();
+      const fresh = now - lastDetect > 55;
+      if (fresh) lastDetect = now;
+
+      // kulit seluruh badan (mask orang) dulu
+      if (bodyRef.current > 0) {
+        const seg = segRef.current;
+        if (seg && fresh) {
+          try {
+            const res = seg.segmentForVideo(v, now);
+            const mask = res.confidenceMasks?.[0];
+            if (mask) fillMaskCanvas(mask as unknown as { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }, maskRef.current!);
+            (res as { close?: () => void }).close?.();
+          } catch { /* */ }
+        }
+        if (maskRef.current && maskRef.current.width > 0) {
+          applyBodySkin(ctx, v, maskRef.current, W, H, bodyRef.current, tintRef.current, bufRef.current!, layerRef.current!);
+        }
+      }
+
       const beauty = whiteRef.current > 0 || eyeRef.current > 1 || lipRef.current > 1;
       const needFaces = effRef.current !== "none" || beauty;
       const lm = lmRef.current;
       if (needFaces && lm) {
-        const now = performance.now();
-        if (now - lastDetect > 55) { lastDetect = now; try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
+        if (fresh) { try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
           if (whiteRef.current > 0) blendSkin(g, W, H, whiteRef.current, tintRef.current);
