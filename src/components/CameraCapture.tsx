@@ -9,16 +9,16 @@ interface Filter extends BeautyFx { key: string; label: string; }
 
 // Nama filter gaya viral + ubah fisik (mata/bibir/pipi/alis/hidung), selaras dgn Live
 const FILTERS: Filter[] = [
-  { key: "normal", label: "Normal", filterCss: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
-  { key: "beautyfilter", label: "Beauty Filter", filterCss: "saturate(1.08)", white: 0.2, tint: "#fff5f2", eye: 1.18, lip: 1.08, cheek: 0.94, nose: 0.9, brow: 1.06, body: 0.16 },
-  { key: "beautymouth", label: "Beauty Mouth", filterCss: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.1, lip: 1.3, cheek: 0.95, nose: 0.92, brow: 1.04, body: 0.14 },
-  { key: "blueblur", label: "Blue Blur", filterCss: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.12, lip: 1.06, cheek: 0.96, nose: 0.94, body: 0.12 },
-  { key: "dontworry", label: "Don't Worry", filterCss: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.1, lip: 1.06, cheek: 0.97, body: 0.1 },
-  { key: "overexposure", label: "Over Exposure", filterCss: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.3, tint: "#ffffff", eye: 1.1, lip: 1.05, body: 0.24 },
-  { key: "natural111", label: "Natural 111", filterCss: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.08, lip: 1.04, cheek: 0.97, nose: 0.95, body: 0.1 },
-  { key: "kindofcute", label: "Kind of Cute", filterCss: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.32, lip: 1.12, cheek: 0.9, nose: 0.88, brow: 1.08, body: 0.16 },
-  { key: "fusiinos", label: "Fusi Wajah Inos", filterCss: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0", eye: 1.28, lip: 1.18, cheek: 0.9, nose: 0.88, brow: 1.06, body: 0.2 },
-  { key: "bw", label: "B&W", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
+  { key: "normal", label: "Normal", filterCss: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0, glow: 0, vignette: 0 },
+  { key: "beautyfilter", label: "Beauty Filter", filterCss: "saturate(1.08)", white: 0.2, tint: "#fff5f2", eye: 1.18, lip: 1.08, cheek: 0.94, nose: 0.9, brow: 1.06, body: 0.16, glow: 0.18 },
+  { key: "beautymouth", label: "Beauty Mouth", filterCss: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.1, lip: 1.3, cheek: 0.95, nose: 0.92, brow: 1.04, body: 0.14, glow: 0.16 },
+  { key: "blueblur", label: "Blue Blur", filterCss: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.12, lip: 1.06, cheek: 0.96, nose: 0.94, body: 0.12, glow: 0.28, vignette: 0.15 },
+  { key: "dontworry", label: "Don't Worry", filterCss: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.1, lip: 1.06, cheek: 0.97, body: 0.1, glow: 0.22 },
+  { key: "overexposure", label: "Over Exposure", filterCss: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.3, tint: "#ffffff", eye: 1.1, lip: 1.05, body: 0.24, glow: 0.34 },
+  { key: "natural111", label: "Natural 111", filterCss: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.08, lip: 1.04, cheek: 0.97, nose: 0.95, body: 0.1, glow: 0.12 },
+  { key: "kindofcute", label: "Kind of Cute", filterCss: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.32, lip: 1.12, cheek: 0.9, nose: 0.88, brow: 1.08, body: 0.16, glow: 0.3, vignette: 0.1 },
+  { key: "fusiinos", label: "Fusi Wajah Inos", filterCss: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0", eye: 1.28, lip: 1.18, cheek: 0.9, nose: 0.88, brow: 1.06, body: 0.2, glow: 0.26, vignette: 0.12 },
+  { key: "bw", label: "B&W", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0, glow: 0, vignette: 0 },
 ];
 
 export function CameraCapture({

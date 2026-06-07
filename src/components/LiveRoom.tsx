@@ -17,18 +17,18 @@ const CHATTER = [
   "Ditunggu konten berikutnya 🙏", "LFG! 🚀", "Ngakak 🤣", "Auto follow 🔔",
 ];
 
-// Filter (nama gaya viral). white=kulit wajah, tint=warna, eye/lip=ubah fisik, body=kulit badan.
+// Filter (nama gaya viral). white=kulit wajah, tint=warna, eye/lip=ubah fisik, body=kulit badan, glow=bloom.
 const FILTERS = [
-  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
-  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.22, tint: "#fff5f2", eye: 1.2, lip: 1.08, body: 0.16 },
-  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.12, lip: 1.32, body: 0.14 },
-  { key: "blueblur", label: "Blue Blur", css: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.14, lip: 1.06, body: 0.12 },
-  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.12, lip: 1.06, body: 0.1 },
-  { key: "overexposure", label: "Over Exposure", css: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.32, tint: "#ffffff", eye: 1.12, lip: 1.06, body: 0.24 },
-  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.1, lip: 1.04, body: 0.1 },
-  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.35, lip: 1.14, body: 0.16 },
-  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.26, tint: "#fff4f0", eye: 1.32, lip: 1.2, body: 0.2 },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0 },
+  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0, glow: 0, vignette: 0 },
+  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.22, tint: "#fff5f2", eye: 1.2, lip: 1.08, body: 0.16, glow: 0.18, vignette: 0 },
+  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.12, lip: 1.32, body: 0.14, glow: 0.16, vignette: 0 },
+  { key: "blueblur", label: "Blue Blur", css: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.14, lip: 1.06, body: 0.12, glow: 0.28, vignette: 0.15 },
+  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.12, lip: 1.06, body: 0.1, glow: 0.22, vignette: 0 },
+  { key: "overexposure", label: "Over Exposure", css: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.32, tint: "#ffffff", eye: 1.12, lip: 1.06, body: 0.24, glow: 0.34, vignette: 0 },
+  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.1, lip: 1.04, body: 0.1, glow: 0.12, vignette: 0 },
+  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.35, lip: 1.14, body: 0.16, glow: 0.3, vignette: 0.1 },
+  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.26, tint: "#fff4f0", eye: 1.32, lip: 1.2, body: 0.2, glow: 0.26, vignette: 0.12 },
+  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, body: 0, glow: 0, vignette: 0 },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
@@ -75,6 +75,8 @@ export function LiveRoom({
   const eyeScale = fltDef.eye ?? 1;
   const lipScale = fltDef.lip ?? 1;
   const bodyStrength = fltDef.body ?? 0;
+  const glow = fltDef.glow ?? 0;
+  const vignette = fltDef.vignette ?? 0;
 
   useEffect(() => {
     const c = setInterval(() => {
@@ -130,7 +132,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />

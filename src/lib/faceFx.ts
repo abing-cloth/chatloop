@@ -22,6 +22,8 @@ export interface BeautyFx {
   brow?: number;   // >1 pertegas alis (reshape)
   body?: number;   // kekuatan haluskan+cerahkan kulit SELURUH badan (mask orang)
   makeup?: MakeupCfg; // riasan
+  glow?: number;   // bloom cahaya dreamy (0-1)
+  vignette?: number; // gelap di tepi (0-1)
 }
 
 interface MPMask { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }
@@ -126,6 +128,31 @@ export function applyMakeup(ctx: CanvasRenderingContext2D, lm: XY[], W: number, 
     for (const bw of [RBROW, LBROW]) { ctx.beginPath(); path(bw); ctx.stroke(); }
   }
   ctx.restore();
+}
+
+/** Glow/finishing: bloom (sorot highlight dilembutkan) + vignette. Dipakai di akhir. */
+export function applyGlow(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, W: number, H: number, buf: HTMLCanvasElement, strength: number, vignette: number) {
+  if (strength > 0) {
+    const bctx = buf.getContext("2d");
+    if (bctx) {
+      buf.width = W; buf.height = H;
+      // isolasi highlight lalu lembutkan -> bloom
+      bctx.filter = `brightness(1.35) contrast(1.7) blur(${Math.max(4, W * 0.02)}px)`;
+      bctx.drawImage(canvas, 0, 0, W, H);
+      bctx.filter = "none";
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = Math.min(0.6, strength);
+      ctx.drawImage(buf, 0, 0, W, H);
+      ctx.restore();
+    }
+  }
+  if (vignette > 0) {
+    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.32, W / 2, H / 2, Math.max(W, H) * 0.72);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, `rgba(0,0,0,${vignette})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
 }
 
 /** Preset riasan per filter (key sama dgn FILTERS). */
@@ -233,4 +260,5 @@ export function renderBeauty(
     if (fx.eye > 1) { warp(ctx, canvas, g.lEyeC.x, g.lEyeC.y, g.eyeR, fx.eye); warp(ctx, canvas, g.rEyeC.x, g.rEyeC.y, g.eyeR, fx.eye); }
     if (fx.lip > 1) warp(ctx, canvas, g.mouth.x, g.mouth.y, g.faceW * 0.2, fx.lip);
   }
+  if ((fx.glow ?? 0) > 0 || (fx.vignette ?? 0) > 0) applyGlow(ctx, canvas, W, H, buf, fx.glow ?? 0, fx.vignette ?? 0);
 }

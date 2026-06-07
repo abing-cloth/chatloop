@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, type MakeupCfg } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, type MakeupCfg } from "../lib/faceFx";
 
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
@@ -28,6 +28,8 @@ export function LiveCamera({
   lipScale = 1,
   bodyStrength = 0,
   makeup,
+  glow = 0,
+  vignette = 0,
   effect,
   facing,
   onReady,
@@ -40,6 +42,8 @@ export function LiveCamera({
   lipScale?: number; // berisi bibir (ubah fisik)
   bodyStrength?: number; // haluskan+cerahkan kulit seluruh badan (mask orang)
   makeup?: MakeupCfg; // riasan
+  glow?: number; // bloom dreamy
+  vignette?: number; // gelap tepi
   effect: string;
   facing: "user" | "environment";
   onReady?: () => void;
@@ -64,8 +68,11 @@ export function LiveCamera({
   const lipRef = useRef(lipScale);
   const bodyRef = useRef(bodyStrength);
   const makeupRef = useRef(makeup);
+  const glowRef = useRef(glow);
+  const vigRef = useRef(vignette);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
+  glowRef.current = glow; vigRef.current = vignette;
 
   useEffect(() => {
     let cancelled = false;
@@ -247,6 +254,7 @@ export function LiveCamera({
           if (effRef.current !== "none") drawEffect(g);
         }
       }
+      if (glowRef.current > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, glowRef.current, vigRef.current);
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
