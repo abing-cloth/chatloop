@@ -61,6 +61,7 @@ export function LiveRoom({
   const [panel, setPanel] = useState<null | "sticker" | "efek">(null);
   const [efekTab, setEfekTab] = useState<"filter" | "wajah">("filter");
   const [genderMode, setGenderMode] = useState<GenderMode>("auto");
+  const [intensity, setIntensity] = useState(1);
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
@@ -135,7 +136,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} genderMode={genderMode} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -225,10 +226,16 @@ export function LiveRoom({
         {panel === "efek" && (
           <div className="absolute inset-x-0 bottom-16 px-3 pb-2">
             {/* gender: atur kekuatan filter otomatis (cewek/cowok) */}
-            <div className="mb-2 flex gap-1.5">
+            <div className="mb-2 flex items-center gap-1.5">
               {([["auto", "🤖 Auto"], ["cewek", "👩 Cewek"], ["cowok", "👨 Cowok"]] as const).map(([g, lbl]) => (
                 <button key={g} onClick={() => setGenderMode(g)} className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur", genderMode === g ? "bg-fuchsia-500 text-white" : "bg-white/20 text-white")}>{lbl}</button>
               ))}
+              <span className="ml-auto text-[11px] font-semibold text-white/90">{Math.round(intensity * 100)}%</span>
+            </div>
+            {/* intensitas beauty */}
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-[11px] text-white/80">✨ Beauty</span>
+              <input type="range" min="0" max="1.5" step="0.05" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="flex-1 accent-fuchsia-500" />
             </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>

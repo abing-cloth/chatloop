@@ -23,6 +23,18 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string }[] = [
 
 const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
 
+// skala kekuatan riasan (untuk intensitas/gender)
+function scaleMakeup(m: MakeupCfg | undefined, k: number): MakeupCfg | undefined {
+  if (!m || k <= 0.02) return undefined;
+  return {
+    lip: m.lip, lipA: (m.lipA ?? 0.4) * k,
+    blush: m.blush, blushA: (m.blushA ?? 0.2) * k,
+    shadow: m.shadow, shadowA: (m.shadowA ?? 0.22) * k,
+    liner: m.liner && k > 0.3,
+    brow: m.brow != null ? m.brow * k : undefined,
+  };
+}
+
 export function LiveCamera({
   filterCss,
   whiteOverlay = 0,
@@ -36,6 +48,7 @@ export function LiveCamera({
   glow = 0,
   vignette = 0,
   genderMode = "auto",
+  intensity = 1,
   effect,
   facing,
   onReady,
@@ -43,6 +56,7 @@ export function LiveCamera({
 }: {
   filterCss: string;
   genderMode?: GenderMode;
+  intensity?: number; // 0..1.5 kekuatan keseluruhan beauty
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -84,9 +98,10 @@ export function LiveCamera({
   const rbufRef = useRef<HTMLCanvasElement | null>(null);
   const genderModeRef = useRef(genderMode);
   const detectedRef = useRef<"male" | "female" | null>(null);
+  const intenRef = useRef(intensity);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
-  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode;
+  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity;
 
   useEffect(() => {
     let cancelled = false;
@@ -243,8 +258,13 @@ export function LiveCamera({
       const fresh = now - lastDetect > 55;
       if (fresh) lastDetect = now;
 
+      // gender -> femaleness (1=cewek penuh, 0=cowok natural) + intensitas keseluruhan
+      const gm = genderModeRef.current;
+      const fem = gm === "cewek" ? 1 : gm === "cowok" ? 0 : (detectedRef.current === "male" ? 0 : 1);
+      const I = intenRef.current;
+
       // kulit seluruh badan (mask orang) dulu
-      if (bodyRef.current > 0) {
+      if (bodyRef.current > 0 && I > 0.02) {
         const seg = segRef.current;
         if (seg && fresh) {
           try {
@@ -255,22 +275,19 @@ export function LiveCamera({
           } catch { /* */ }
         }
         if (maskRef.current && maskRef.current.width > 0) {
-          applyBodySkin(ctx, v, maskRef.current, W, H, bodyRef.current, tintRef.current, bufRef.current!, layerRef.current!);
+          applyBodySkin(ctx, v, maskRef.current, W, H, Math.min(0.6, bodyRef.current * I), tintRef.current, bufRef.current!, layerRef.current!);
         }
       }
 
-      // gender -> femaleness (1=cewek penuh, 0=cowok natural). Auto pakai hasil deteksi.
-      const gm = genderModeRef.current;
-      const fem = gm === "cewek" ? 1 : gm === "cowok" ? 0 : (detectedRef.current === "male" ? 0 : 1);
-      const effWhite = whiteRef.current > 0 ? Math.max(0.06, whiteRef.current * (0.5 + 0.5 * fem)) : 0;
-      const effGlow = glowRef.current * (0.4 + 0.6 * fem);
-      const effMakeup = fem >= 0.4 ? makeupRef.current : undefined; // cowok: tanpa makeup
+      const effWhite = (whiteRef.current > 0 && I > 0.02) ? Math.min(0.6, Math.max(0.04, whiteRef.current * (0.5 + 0.5 * fem) * I)) : 0;
+      const effGlow = glowRef.current * (0.4 + 0.6 * fem) * I;
+      const effMakeup = fem >= 0.4 ? scaleMakeup(makeupRef.current, fem * I) : undefined; // cowok: tanpa makeup
       const rp: ReshapeParams = {
-        eye: 1 + (eyeRef.current - 1) * fem,        // cowok: tak membesarkan mata
-        lip: 1 + (lipRef.current - 1) * fem,
-        nose: 1 - (1 - noseRef.current) * (0.4 + 0.6 * fem),
-        slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 * fem : 0,
-        vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 * fem : 0,
+        eye: 1 + (eyeRef.current - 1) * fem * I,    // cowok: tak membesarkan mata
+        lip: 1 + (lipRef.current - 1) * fem * I,
+        nose: 1 - (1 - noseRef.current) * (0.4 + 0.6 * fem) * I,
+        slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 * fem * I : 0,
+        vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 * fem * I : 0,
       };
       const beauty = effWhite > 0 || effMakeup != null || needsReshape(rp);
       const needFaces = effRef.current !== "none" || beauty;
