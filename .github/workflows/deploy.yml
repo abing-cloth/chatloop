@@ -1,4 +1,4 @@
-name: Deploy ChatLoop ke GitHub Pages
+name: Deploy SUUCHAT ke GitHub Pages
 
 on:
   push:

@@ -32,7 +32,7 @@ export function InstallBanner() {
           <Download size={24} />
         </div>
         <div className="min-w-0 flex-1 pr-4">
-          <p className="text-sm font-bold">Pasang ChatLoop di perangkatmu</p>
+          <p className="text-sm font-bold">Pasang SUUCHAT di perangkatmu</p>
           <p className="text-xs text-white/85">
             Akses lebih cepat, layar penuh, & bisa dipakai offline.
           </p>

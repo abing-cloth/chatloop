@@ -292,7 +292,7 @@ export const useStore = create<State>()(
             name: name.trim(),
             username: clean,
             avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(clean || id)}`,
-            bio: "Pengguna baru di ChatLoop 🔄",
+            bio: "Pengguna baru di SUUCHAT 🔄",
             verified: true, // sudah lolos verifikasi OTP
             phone,
             email,

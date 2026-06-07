@@ -79,7 +79,7 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
     setEditing(false);
   }
 
-  // daftar untuk modal pengikut/mengikuti (sampel pengguna ChatLoop)
+  // daftar untuk modal pengikut/mengikuti (sampel pengguna SUUCHAT)
   const sample = allUsers.filter((u) => u.id !== target.id);
   const followingList = isSelf ? allUsers.filter((u) => following.includes(u.id)) : sample;
 

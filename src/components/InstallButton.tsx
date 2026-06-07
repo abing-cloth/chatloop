@@ -54,7 +54,7 @@ export function InstallButton({
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-lg font-bold">
-                <img src={asset("chatloop.svg")} alt="" className="h-7 w-7" /> Pasang ChatLoop
+                <img src={asset("chatloop.svg")} alt="" className="h-7 w-7" /> Pasang SUUCHAT
               </h3>
               <button
                 onClick={() => setShowHelp(false)}
@@ -76,22 +76,22 @@ export function InstallButton({
                 </li>
                 <li className="flex gap-3">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-fuchsia-100 text-xs font-bold text-fuchsia-700 dark:bg-fuchsia-950">3</span>
-                  <span>Ketuk <b>Tambah</b> — ikon ChatLoop muncul di layar utama. 🎉</span>
+                  <span>Ketuk <b>Tambah</b> — ikon SUUCHAT muncul di layar utama. 🎉</span>
                 </li>
               </ol>
             ) : (
               <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                 <p>
-                  Buka ChatLoop di <b>Chrome</b> atau <b>Edge</b>, lalu:
+                  Buka SUUCHAT di <b>Chrome</b> atau <b>Edge</b>, lalu:
                 </p>
                 <ol className="space-y-3">
                   <li className="flex gap-3">
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-fuchsia-100 text-xs font-bold text-fuchsia-700 dark:bg-fuchsia-950">1</span>
-                    <span>Klik ikon <Download size={15} className="inline -mt-0.5" /> <b>Install</b> di kanan bilah alamat (atau menu ⋮ → <b>Install ChatLoop</b>).</span>
+                    <span>Klik ikon <Download size={15} className="inline -mt-0.5" /> <b>Install</b> di kanan bilah alamat (atau menu ⋮ → <b>Install SUUCHAT</b>).</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-fuchsia-100 text-xs font-bold text-fuchsia-700 dark:bg-fuchsia-950">2</span>
-                    <span>Klik <b>Install</b> — ChatLoop jadi aplikasi mandiri di perangkat Anda. 🎉</span>
+                    <span>Klik <b>Install</b> — SUUCHAT jadi aplikasi mandiri di perangkat Anda. 🎉</span>
                   </li>
                 </ol>
                 <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">

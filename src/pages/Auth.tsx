@@ -100,9 +100,9 @@ export function Auth() {
       <div className="flex flex-1 flex-col justify-center px-8 py-12 lg:px-16">
         <div className="mx-auto max-w-md lg:mx-0">
           <div className="flex items-center gap-3">
-            <img src={asset("chatloop.svg")} alt="ChatLoop" className="h-14 w-14" />
+            <img src={asset("chatloop.svg")} alt="SUUCHAT" className="h-14 w-14" />
             <span className="bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
-              ChatLoop
+              SUUCHAT
             </span>
           </div>
           <h1 className="mt-6 text-2xl font-bold text-zinc-800 dark:text-zinc-100">

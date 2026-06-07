@@ -18,7 +18,7 @@ const DICT: Record<string, { id: string; en: string }> = {
   "nav.profile": { id: "Profil", en: "Profile" },
   "nav.settings": { id: "Pengaturan", en: "Settings" },
   // umum
-  "common.search": { id: "Cari di ChatLoop", en: "Search ChatLoop" },
+  "common.search": { id: "Cari di SUUCHAT", en: "Search SUUCHAT" },
   "common.darkMode": { id: "Mode Gelap", en: "Dark Mode" },
   "common.lightMode": { id: "Mode Terang", en: "Light Mode" },
   "common.reset": { id: "Reset", en: "Reset" },

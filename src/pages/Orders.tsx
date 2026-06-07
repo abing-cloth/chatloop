@@ -11,7 +11,7 @@ const STEPS: { key: OrderStatus; label: string; icon: typeof Package }[] = [
 ];
 
 const PAYMENT_LABEL: Record<string, string> = {
-  saldo: "Saldo ChatLoop",
+  saldo: "Saldo SUUCHAT",
   transfer: "Transfer Bank",
   ewallet: "E-Wallet",
   cod: "Bayar di Tempat (COD)",

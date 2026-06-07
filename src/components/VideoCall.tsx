@@ -9,7 +9,7 @@ export function VideoCall({
 }: {
   user: User;
   mode?: "video" | "voice";
-  onEnd: () => void;
+  onEnd: (seconds?: number) => void;
 }) {
   const isVideo = mode === "video";
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,7 +68,7 @@ export function VideoCall({
         <button onClick={toggleMute} className="grid h-14 w-14 place-items-center rounded-full bg-white/15 backdrop-blur transition hover:bg-white/25">
           {muted ? <MicOff size={24} /> : <Mic size={24} />}
         </button>
-        <button onClick={onEnd} className="grid h-16 w-16 place-items-center rounded-full bg-red-600 transition hover:bg-red-700">
+        <button onClick={() => onEnd(seconds)} className="grid h-16 w-16 place-items-center rounded-full bg-red-600 transition hover:bg-red-700">
           <PhoneOff size={28} />
         </button>
         {isVideo ? (

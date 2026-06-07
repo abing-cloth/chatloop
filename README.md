@@ -1,4 +1,4 @@
-# ChatLoop 🔄💬
+# SUUCHAT 🔄💬
 
 Aplikasi media sosial & chat ala **Facebook / Instagram**. Dibuat dengan React 19 + Vite 7 + TypeScript + TailwindCSS 4 + Zustand. Data tersimpan otomatis di `localStorage` browser — **tidak perlu backend / server**.
 

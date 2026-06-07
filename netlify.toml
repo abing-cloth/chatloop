@@ -1,4 +1,4 @@
-# Konfigurasi deploy Netlify untuk ChatLoop
+# Konfigurasi deploy Netlify untuk SUUCHAT
 [build]
   command = "npm run build"
   publish = "dist"

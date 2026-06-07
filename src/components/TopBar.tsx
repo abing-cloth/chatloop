@@ -24,9 +24,9 @@ export function TopBar({
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
         {/* logo */}
         <button onClick={() => onNavigate("feed")} className="flex items-center gap-2">
-          <img src={asset("chatloop.svg")} alt="ChatLoop" className="h-9 w-9" />
+          <img src={asset("chatloop.svg")} alt="SUUCHAT" className="h-9 w-9" />
           <span className="bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent">
-            ChatLoop
+            SUUCHAT
           </span>
         </button>
 

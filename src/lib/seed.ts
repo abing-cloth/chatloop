@@ -24,7 +24,7 @@ export const ME: User = {
   name: "Kamu",
   username: "kamu",
   avatar: avatar("kamu-loop"),
-  bio: "Halo! Aku pengguna baru di ChatLoop 🔄",
+  bio: "Halo! Aku pengguna baru di SUUCHAT 🔄",
   verified: true,
   followers: 128,
   following: 180,
@@ -113,7 +113,7 @@ export const SEED_LIVES: LiveStream[] = [
 const day = 24 * hr;
 export const SEED_SCHEDULED: ScheduledLive[] = [
   { id: "sc1", userId: "u1", title: "Workshop seduh kopi manual ☕", category: "Obrolan", thumbnail: img("sched-coffee", 600, 400), startsAt: now + 3 * hr },
-  { id: "sc2", userId: "u4", title: "Bedah fitur baru ChatLoop bareng 💻", category: "Teknologi", thumbnail: img("sched-tech", 600, 400), startsAt: now + 1 * day },
+  { id: "sc2", userId: "u4", title: "Bedah fitur baru SUUCHAT bareng 💻", category: "Teknologi", thumbnail: img("sched-tech", 600, 400), startsAt: now + 1 * day },
   { id: "sc3", userId: "u3", title: "Live trip ke Raja Ampat 🐠", category: "Travel", thumbnail: img("sched-travel", 600, 400), startsAt: now + 2 * day + 5 * hr },
 ];
 
@@ -208,7 +208,7 @@ export const SEED_CONVERSATIONS: Conversation[] = [
   {
     userId: "u4",
     messages: [
-      { id: "m4", fromId: "u4", text: "Bro, fitur baru di ChatLoop mantap juga 🚀", createdAt: now - 3 * hr },
+      { id: "m4", fromId: "u4", text: "Bro, fitur baru di SUUCHAT mantap juga 🚀", createdAt: now - 3 * hr },
       { id: "m5", fromId: "me", text: "Haha makasih, masih banyak yang mau ditambah", createdAt: now - 2.5 * hr },
     ],
   },

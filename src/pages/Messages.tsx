@@ -421,7 +421,20 @@ export function Messages() {
         </div>
       )}
 
-      {callMode && active && <VideoCall user={user(active.userId)} mode={callMode} onEnd={() => setCallMode(null)} />}
+      {callMode && active && (
+        <VideoCall
+          user={user(active.userId)}
+          mode={callMode}
+          onEnd={(secs) => {
+            const to = active.userId, m = callMode;
+            const dur = secs ?? 0;
+            const mms = `${String(Math.floor(dur / 60)).padStart(2, "0")}:${String(dur % 60).padStart(2, "0")}`;
+            // catat panggilan di riwayat chat
+            sendMessage(to, `${m === "video" ? "📹 Panggilan video" : "📞 Panggilan suara"} · ${dur > 0 ? mms : "tak terjawab"}`);
+            setCallMode(null);
+          }}
+        />
+      )}
       {showCreateGroup && (
         <CreateGroupModal
           onClose={() => setShowCreateGroup(false)}

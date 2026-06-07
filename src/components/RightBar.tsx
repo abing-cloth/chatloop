@@ -44,7 +44,7 @@ export function RightBar() {
       </div>
 
       <p className="mt-4 px-2 text-xs leading-relaxed text-zinc-400">
-        ChatLoop © 2026 · Tentang · Bantuan · Privasi · Ketentuan
+        SUUCHAT © 2026 · Tentang · Bantuan · Privasi · Ketentuan
         <br />
         Dibuat dengan 💜 di Indonesia
       </p>

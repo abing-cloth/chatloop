@@ -6,3 +6,6 @@ android-twa
 *.local
 .vite
 .DS_Store
+
+# env lokal (kunci backend)
+.env

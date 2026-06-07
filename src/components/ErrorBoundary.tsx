@@ -18,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: unknown) {
     // eslint-disable-next-line no-console
-    console.error("ChatLoop error:", error);
+    console.error("SUUCHAT error:", error);
   }
 
   reset = () => {
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-50 p-8 text-center dark:bg-zinc-950">
-        <img src={asset("chatloop.svg")} alt="ChatLoop" className="h-16 w-16" />
+        <img src={asset("chatloop.svg")} alt="SUUCHAT" className="h-16 w-16" />
         <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Ups, terjadi kesalahan</h1>
         <p className="max-w-sm text-sm text-zinc-500">
           Maaf, ada gangguan. Coba muat ulang. Jika masih bermasalah, pulihkan data demo.

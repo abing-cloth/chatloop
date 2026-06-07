@@ -48,9 +48,9 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-fuchsia-700 via-purple-700 to-indigo-700 px-8 text-white">
-      <img src={asset("chatloop.svg")} alt="ChatLoop" className="h-16 w-16" />
+      <img src={asset("chatloop.svg")} alt="SUUCHAT" className="h-16 w-16" />
       <h1 className="mt-4 text-xl font-bold">Halo, {me.name.split(" ")[0]} 👋</h1>
-      <p className="mt-1 text-sm text-white/80">Masukkan PIN untuk membuka ChatLoop</p>
+      <p className="mt-1 text-sm text-white/80">Masukkan PIN untuk membuka SUUCHAT</p>
 
       {/* titik PIN */}
       <div className={cn("mt-6 flex gap-3", error && "animate-pop")}>

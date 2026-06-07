@@ -47,7 +47,7 @@ export function Settings() {
     }
     const ok = await requestNotifPermission();
     setSetting("pushEnabled", ok);
-    if (ok) showNotif("ChatLoop 🔔", "Notifikasi aktif! Kamu akan dapat kabar terbaru.");
+    if (ok) showNotif("SUUCHAT 🔔", "Notifikasi aktif! Kamu akan dapat kabar terbaru.");
   }
 
   async function toggleAppLock() {
@@ -176,7 +176,7 @@ export function Settings() {
       <Section icon={<Download size={18} />} title={tr("set.app")}>
         <div className="px-1 py-1">
           <p className="mb-3 text-sm text-zinc-500">
-            Pasang ChatLoop sebagai aplikasi — buka langsung dari layar utama,
+            Pasang SUUCHAT sebagai aplikasi — buka langsung dari layar utama,
             tampil layar penuh, dan bisa dipakai offline.
           </p>
           <InstallButton className="w-full" />
@@ -187,7 +187,7 @@ export function Settings() {
         <Row label={tr("set.push")} desc={tr("set.pushDesc")} checked={settings.pushEnabled} onChange={togglePush} />
         {settings.pushEnabled && (
           <button
-            onClick={() => showNotif("ChatLoop 🔔", "Ini contoh notifikasi dari ChatLoop!")}
+            onClick={() => showNotif("SUUCHAT 🔔", "Ini contoh notifikasi dari SUUCHAT!")}
             className="mb-1 ml-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
           >
             Kirim notifikasi contoh
@@ -229,7 +229,7 @@ export function Settings() {
       {me.admin && (
         <Section icon={<ShieldAlert size={18} />} title="Pengelola (Admin)">
           <div className="px-1 py-1">
-            <p className="mb-3 text-sm text-zinc-500">Kelola pengguna ChatLoop demi keamanan & kenyamanan — blokir akun yang melanggar.</p>
+            <p className="mb-3 text-sm text-zinc-500">Kelola pengguna SUUCHAT demi keamanan & kenyamanan — blokir akun yang melanggar.</p>
             <button onClick={() => navigate("admin")} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 py-2.5 text-sm font-semibold text-white">
               <ShieldAlert size={16} /> Buka Panel Admin
             </button>
@@ -240,7 +240,7 @@ export function Settings() {
       <Section icon={<Lock size={18} />} title={tr("set.security")}>
         <Row
           label="Kunci aplikasi (PIN)"
-          desc="Minta PIN saat membuka ChatLoop"
+          desc="Minta PIN saat membuka SUUCHAT"
           checked={settings.appLockEnabled}
           onChange={toggleAppLock}
         />
@@ -342,7 +342,7 @@ export function Settings() {
       <Section icon={<Info size={18} />} title={tr("set.about")}>
         <div className="px-1 py-1 text-sm text-zinc-500">
           <p>
-            <span className="font-semibold text-zinc-700 dark:text-zinc-300">ChatLoop</span>{" "}
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">SUUCHAT</span>{" "}
             versi 0.1.0
           </p>
           <p className="mt-1">Ngobrol, terhubung, tanpa henti. 🔄</p>

@@ -40,7 +40,7 @@ export function Wallet() {
 
       {/* kartu saldo */}
       <div className="rounded-3xl bg-gradient-to-br from-fuchsia-600 via-purple-600 to-indigo-600 p-5 text-white shadow-lg">
-        <p className="text-sm text-white/80">Saldo ChatLoop</p>
+        <p className="text-sm text-white/80">Saldo SUUCHAT</p>
         <p className="mt-1 text-3xl font-extrabold tracking-tight">{formatRupiah(balance)}</p>
         <div className="mt-4 flex gap-2">
           <button

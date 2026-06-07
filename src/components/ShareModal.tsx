@@ -22,7 +22,7 @@ export function ShareModal({ user, onClose }: { user: User; onClose: () => void 
   async function nativeShare() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Profil ${user.name} di ChatLoop`, text: `Ikuti @${user.username} di ChatLoop 🔄`, url: link });
+        await navigator.share({ title: `Profil ${user.name} di SUUCHAT`, text: `Ikuti @${user.username} di SUUCHAT 🔄`, url: link });
       } catch {
         /* dibatalkan */
       }

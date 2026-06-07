@@ -20,7 +20,7 @@ import type { PaymentMethod } from "../lib/types";
 type Step = "cart" | "address" | "done";
 
 const PAYMENTS: { id: PaymentMethod; label: string; desc: string; icon: typeof Wallet }[] = [
-  { id: "saldo", label: "Saldo ChatLoop", desc: "Bayar pakai dompet", icon: Wallet },
+  { id: "saldo", label: "Saldo SUUCHAT", desc: "Bayar pakai dompet", icon: Wallet },
   { id: "transfer", label: "Transfer Bank", desc: "BCA, BNI, Mandiri, dll", icon: CreditCard },
   { id: "ewallet", label: "E-Wallet", desc: "GoPay, OVO, DANA, ShopeePay", icon: Wallet },
   { id: "cod", label: "Bayar di Tempat (COD)", desc: "Bayar tunai saat barang tiba", icon: Banknote },
