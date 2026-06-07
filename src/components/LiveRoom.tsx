@@ -3,6 +3,7 @@ import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, Vide
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS } from "./LiveCamera";
+import { MAKEUP } from "../lib/faceFx";
 import type { LiveStream } from "../lib/types";
 
 interface LiveComment { id: number; name: string; avatar: string; text: string }
@@ -129,7 +130,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} bodyStrength={bodyStrength} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />

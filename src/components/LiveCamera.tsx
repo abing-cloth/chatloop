@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, type MakeupCfg } from "../lib/faceFx";
 
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
@@ -27,6 +27,7 @@ export function LiveCamera({
   eyeScale = 1,
   lipScale = 1,
   bodyStrength = 0,
+  makeup,
   effect,
   facing,
   onReady,
@@ -38,6 +39,7 @@ export function LiveCamera({
   eyeScale?: number; // perbesar mata (ubah fisik)
   lipScale?: number; // berisi bibir (ubah fisik)
   bodyStrength?: number; // haluskan+cerahkan kulit seluruh badan (mask orang)
+  makeup?: MakeupCfg; // riasan
   effect: string;
   facing: "user" | "environment";
   onReady?: () => void;
@@ -61,8 +63,9 @@ export function LiveCamera({
   const eyeRef = useRef(eyeScale);
   const lipRef = useRef(lipScale);
   const bodyRef = useRef(bodyStrength);
+  const makeupRef = useRef(makeup);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
-  tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength;
+  tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
 
   useEffect(() => {
     let cancelled = false;
@@ -239,6 +242,7 @@ export function LiveCamera({
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
           if (whiteRef.current > 0) blendSkin(g, W, H, whiteRef.current, tintRef.current);
+          if (makeupRef.current) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, makeupRef.current, g.faceW);
           reshape(g);
           if (effRef.current !== "none") drawEffect(g);
         }

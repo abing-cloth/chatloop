@@ -3,6 +3,14 @@ import { getFaceLandmarker } from "./faceLandmarker";
 import { getSelfieSegmenter } from "./selfieSegmenter";
 export { getSelfieSegmenter };
 
+export interface MakeupCfg {
+  lip?: string; lipA?: number;       // lipstik warna + opacity
+  blush?: string; blushA?: number;   // blush pipi
+  shadow?: string; shadowA?: number; // eyeshadow
+  liner?: boolean;                   // eyeliner
+  brow?: number;                     // pertegas alis (opacity)
+}
+
 export interface BeautyFx {
   filterCss: string;
   white: number;   // kekuatan proses kulit (wajah)
@@ -11,8 +19,9 @@ export interface BeautyFx {
   lip: number;     // >1 bibir berisi
   cheek?: number;  // <1 tiruskan pipi
   nose?: number;   // <1 perkecil hidung
-  brow?: number;   // >1 pertegas alis
+  brow?: number;   // >1 pertegas alis (reshape)
   body?: number;   // kekuatan haluskan+cerahkan kulit SELURUH badan (mask orang)
+  makeup?: MakeupCfg; // riasan
 }
 
 interface MPMask { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }
@@ -60,6 +69,76 @@ export function applyBodySkin(
   ctx.drawImage(layer, 0, 0, W, H);
   ctx.globalAlpha = 1;
 }
+
+// ===== Makeup (riasan) =====
+const LIPS_OUTER = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146];
+const LIPS_INNER = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+const REYE_UP = [33, 246, 161, 160, 159, 158, 157, 173, 133];
+const LEYE_UP = [263, 466, 388, 387, 386, 385, 384, 398, 362];
+const RBROW = [70, 63, 105, 66, 107];
+const LBROW = [336, 296, 334, 293, 300];
+
+function hexA(hex: string, a: number) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+/** Riasan: lipstik, blush, eyeshadow, eyeliner, alis — pakai 468 titik wajah. */
+export function applyMakeup(ctx: CanvasRenderingContext2D, lm: XY[], W: number, H: number, m: MakeupCfg, faceW: number) {
+  const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
+  const path = (idx: number[]) => idx.forEach((i, k) => { const p = P(i); k ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
+  ctx.save();
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  // lipstik (cincin bibir, evenodd -> tak mewarnai dalam mulut)
+  if (m.lip) {
+    ctx.beginPath(); path(LIPS_OUTER); ctx.closePath(); path(LIPS_INNER); ctx.closePath();
+    ctx.fillStyle = hexA(m.lip, m.lipA ?? 0.4); ctx.fill("evenodd");
+  }
+  // blush pipi (gradien lembut)
+  if (m.blush) {
+    for (const ci of [50, 280]) {
+      const c = P(ci), r = faceW * 0.2;
+      const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, r);
+      g.addColorStop(0, hexA(m.blush, m.blushA ?? 0.2)); g.addColorStop(1, hexA(m.blush, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // eyeshadow (gradien di atas kelopak)
+  if (m.shadow) {
+    for (const eye of [REYE_UP, LEYE_UP]) {
+      const a = P(eye[0]), b = P(eye[eye.length - 1]);
+      const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2 - faceW * 0.03;
+      const rx = (Math.hypot(b.x - a.x, b.y - a.y) * 0.6) || faceW * 0.12, ry = rx * 0.6;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+      g.addColorStop(0, hexA(m.shadow, m.shadowA ?? 0.22)); g.addColorStop(1, hexA(m.shadow, 0));
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx); ctx.translate(-cx, -cy);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rx, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+  }
+  // eyeliner (garis lash line atas)
+  if (m.liner) {
+    ctx.strokeStyle = "rgba(20,15,15,0.7)"; ctx.lineWidth = Math.max(1, faceW * 0.012);
+    for (const eye of [REYE_UP, LEYE_UP]) { ctx.beginPath(); path(eye); ctx.stroke(); }
+  }
+  // alis (pertegas)
+  if (m.brow) {
+    ctx.strokeStyle = `rgba(70,45,30,${m.brow})`; ctx.lineWidth = faceW * 0.045;
+    for (const bw of [RBROW, LBROW]) { ctx.beginPath(); path(bw); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+/** Preset riasan per filter (key sama dgn FILTERS). */
+export const MAKEUP: Record<string, MakeupCfg> = {
+  beautyfilter: { lip: "#d9637a", lipA: 0.32, blush: "#ff8fa3", blushA: 0.18, shadow: "#caa0b0", shadowA: 0.22, liner: true, brow: 0.18 },
+  beautymouth: { lip: "#e0354f", lipA: 0.5, blush: "#ff8fb0", blushA: 0.2, liner: true, brow: 0.16 },
+  blueblur: { lip: "#cf6f86", lipA: 0.3, shadow: "#9fb6e0", shadowA: 0.22, liner: true },
+  dontworry: { lip: "#e07a86", lipA: 0.34, blush: "#ffb38f", blushA: 0.2 },
+  overexposure: { lip: "#d98a96", lipA: 0.28, blush: "#ffd0c0", blushA: 0.16 },
+  natural111: { lip: "#cf8a86", lipA: 0.26, blush: "#ffb0a0", blushA: 0.14, brow: 0.14 },
+  kindofcute: { lip: "#ff5d86", lipA: 0.42, blush: "#ff7fb0", blushA: 0.26, shadow: "#ffaad0", shadowA: 0.28, liner: true, brow: 0.2 },
+  fusiinos: { lip: "#d94f6e", lipA: 0.44, blush: "#ff8fa8", blushA: 0.22, shadow: "#d2a3c0", shadowA: 0.24, liner: true, brow: 0.2 },
+};
 
 type XY = { x: number; y: number };
 const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -145,6 +224,7 @@ export function renderBeauty(
     if (!lm || lm.length < 468) continue;
     const g = geoOf(lm, W, H);
     if (fx.white > 0) blendSkin(ctx, source, g, W, H, fx.white, fx.tint, buf, fbuf);
+    if (fx.makeup) applyMakeup(ctx, lm, W, H, fx.makeup, g.faceW);
     // tiruskan pipi & hidung (perkecil)
     if (fx.cheek && fx.cheek < 1) { warp(ctx, canvas, g.lCheek.x, g.lCheek.y, g.faceW * 0.26, fx.cheek); warp(ctx, canvas, g.rCheek.x, g.rCheek.y, g.faceW * 0.26, fx.cheek); }
     if (fx.nose && fx.nose < 1) warp(ctx, canvas, g.nose.x, g.nose.y, g.faceW * 0.2, fx.nose);

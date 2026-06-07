@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Check, ImagePlus, RefreshCw, RotateCcw, SwitchCamera, X } from "lucide-react";
 import { cn, fileToDataUrl } from "../lib/utils";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { renderBeauty, getSelfieSegmenter, fillMaskCanvas, type BeautyFx } from "../lib/faceFx";
+import { renderBeauty, getSelfieSegmenter, fillMaskCanvas, MAKEUP, type BeautyFx } from "../lib/faceFx";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 
 interface Filter extends BeautyFx { key: string; label: string; }
@@ -124,7 +124,7 @@ export function CameraCapture({
           res.close?.();
         } catch { /* */ }
       }
-      renderBeauty(ctx, c, source, W, H, facesRef.current, { ...f, filterCss: css }, bufRef.current!, fbufRef.current!, maskCanvasRef.current, layerRef.current);
+      renderBeauty(ctx, c, source, W, H, facesRef.current, { ...f, filterCss: css, makeup: MAKEUP[f.key] }, bufRef.current!, fbufRef.current!, maskCanvasRef.current, layerRef.current);
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
