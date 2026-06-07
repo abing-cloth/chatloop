@@ -16,18 +16,20 @@ const CHATTER = [
   "Ditunggu konten berikutnya 🙏", "LFG! 🚀", "Ngakak 🤣", "Auto follow 🔔",
 ];
 
+// Filter kecantikan (cerah/mulus/putih/cantik) -> memproses KULIT wajah (haluskan + putihkan),
+// bukan sekadar mencerahkan cahaya seluruh layar. Nilai `white` = kekuatan pemutih kulit.
 const FILTERS = [
   { key: "normal", label: "Normal", css: "none", white: 0 },
-  { key: "cerah", label: "Cerah", css: "brightness(1.2) contrast(1.02) saturate(1.12)", white: 0 },
-  { key: "putih", label: "Putih", css: "brightness(1.35) contrast(0.84) saturate(0.82)", white: 0.2 },
-  { key: "putih2", label: "Putih+", css: "brightness(1.5) contrast(0.78) saturate(0.7)", white: 0.34 },
-  { key: "mulus", label: "Mulus", css: "brightness(1.18) saturate(1.05) contrast(1.0) blur(1.6px)", white: 0.1 },
-  { key: "cantik", label: "Cantik", css: "brightness(1.26) saturate(1.16) contrast(1.0) sepia(0.08)", white: 0.12 },
+  { key: "cerah", label: "Cerah", css: "saturate(1.08) contrast(1.02)", white: 0.14 },
+  { key: "mulus", label: "Mulus", css: "saturate(1.04)", white: 0.12 },
+  { key: "putih", label: "Putih", css: "saturate(0.9)", white: 0.3 },
+  { key: "putih2", label: "Putih+", css: "saturate(0.82)", white: 0.42 },
+  { key: "cantik", label: "Cantik", css: "saturate(1.12) sepia(0.05)", white: 0.18 },
   { key: "vivid", label: "Vivid", css: "saturate(1.6) contrast(1.12)", white: 0 },
   { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0 },
   { key: "vintage", label: "Vintage", css: "sepia(0.4) contrast(0.92) brightness(1.05) saturate(1.25)", white: 0 },
-  { key: "dingin", label: "Dingin", css: "hue-rotate(-18deg) saturate(1.25) brightness(1.08)", white: 0 },
-  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.08)", white: 0 },
+  { key: "dingin", label: "Dingin", css: "hue-rotate(-18deg) saturate(1.25) brightness(1.04)", white: 0 },
+  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.04)", white: 0 },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
