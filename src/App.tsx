@@ -23,6 +23,7 @@ import { Auth } from "./pages/Auth";
 import { Splash } from "./components/Splash";
 import { LockScreen } from "./components/LockScreen";
 import { CartDrawer } from "./components/CartDrawer";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useStore } from "./lib/store";
 
 export default function App() {
@@ -89,7 +90,8 @@ export default function App() {
       <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
         <Sidebar view={view} onNavigate={setView} />
         <main className="min-w-0 flex-1">
-          <div key={view} className="animate-fade">
+          <ErrorBoundary key={view}>
+          <div className="animate-fade">
             {view === "feed" && <Feed />}
             {view === "explore" && <Explore />}
             {view === "reels" && <Reels />}
@@ -107,6 +109,7 @@ export default function App() {
             {view === "profile" && <Profile onNavigate={setView} />}
             {view === "settings" && <Settings />}
           </div>
+          </ErrorBoundary>
         </main>
         {view === "feed" && <RightBar />}
       </div>

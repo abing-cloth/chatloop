@@ -17,7 +17,28 @@ const FILTERS = [
   { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.05)" },
 ];
 
-const TRACKS = ["Suara asli", "Lo-fi Chill 🎧", "Energetic Beat 🔥", "Calm Piano 🎹", "Dangdut Koplo 🪕", "Pop Galau 💔", "EDM Party 🎉", "Akustik Senja 🌇"];
+const TRACKS = [
+  "Suara asli",
+  "🔥 Viral TikTok Beat",
+  "💃 Joget Dangdut Koplo",
+  "🎧 Lo-fi Chill Santai",
+  "💔 Pop Galau Hits",
+  "🎉 EDM Party Drop",
+  "🌇 Akustik Senja",
+  "🎹 Piano Sedih Viral",
+  "🪕 Koplo Jaranan",
+  "🕺 Phonk Drift",
+  "✨ Aesthetic Vibe",
+  "🥁 Gala Gala Remix",
+  "🎵 Sound Trending",
+  "❤️ Lagu Cinta Romantis",
+  "🚗 JJ Slowed Reverb",
+  "🔊 Bass Boosted",
+  "🌴 Reggae Santuy",
+  "🎤 Rap Indo Keras",
+  "💫 Mellow Acoustic",
+  "🪩 Disco Funk 80an",
+];
 
 export function Reels() {
   const reels = useStore((s) => s.reels);

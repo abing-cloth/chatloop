@@ -7,17 +7,19 @@ interface Filter {
   label: string;
   css: string;
   glow?: boolean;
+  white?: number; // lapisan putih (0-1) untuk memutihkan kulit
 }
 
 const FILTERS: Filter[] = [
   { key: "normal", label: "Asli", css: "none" },
-  { key: "cerah", label: "Cerah", css: "brightness(1.15) contrast(1.03) saturate(1.1)" },
-  { key: "putih", label: "Putih", css: "brightness(1.28) contrast(0.9) saturate(0.92)" },
-  { key: "mulus", label: "Mulus", css: "brightness(1.12) saturate(1.05) contrast(1.02) blur(1.2px)" },
-  { key: "cantik", label: "Cantik", css: "brightness(1.2) saturate(1.18) contrast(1.02) sepia(0.12)", glow: true },
-  { key: "glow", label: "Glow", css: "brightness(1.22) saturate(1.12) contrast(1.0) blur(0.7px)", glow: true },
-  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.3) brightness(1.08)" },
-  { key: "dingin", label: "Dingin", css: "hue-rotate(-12deg) saturate(1.15) brightness(1.08)" },
+  { key: "cerah", label: "Cerah", css: "brightness(1.2) contrast(1.02) saturate(1.1)" },
+  { key: "putih", label: "Putih", css: "brightness(1.35) contrast(0.84) saturate(0.82)", white: 0.2 },
+  { key: "putih2", label: "Putih+", css: "brightness(1.5) contrast(0.78) saturate(0.7)", white: 0.34 },
+  { key: "mulus", label: "Mulus", css: "brightness(1.18) saturate(1.05) contrast(1.0) blur(1.6px)", white: 0.1 },
+  { key: "cantik", label: "Cantik", css: "brightness(1.26) saturate(1.16) contrast(1.0) sepia(0.08)", glow: true, white: 0.12 },
+  { key: "glow", label: "Glow", css: "brightness(1.3) saturate(1.1) contrast(1.0) blur(0.9px)", glow: true, white: 0.1 },
+  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.3) brightness(1.1)" },
+  { key: "dingin", label: "Dingin", css: "hue-rotate(-12deg) saturate(1.15) brightness(1.1)" },
   { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1) brightness(1.05)" },
 ];
 
@@ -33,11 +35,13 @@ export function CameraCapture({
   const fileRef = useRef<HTMLInputElement>(null);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [filter, setFilter] = useState("cerah");
+  const [bright, setBright] = useState(1);
   const [shot, setShot] = useState<string | null>(null); // hasil capture (sebelum dipakai)
   const [galleryImg, setGalleryImg] = useState<string | null>(null); // foto galeri untuk difilter
   const [camError, setCamError] = useState(false);
 
   const flt = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
+  const cssStr = (((flt.css === "none" ? "" : flt.css) + (bright !== 1 ? ` brightness(${bright})` : "")).trim()) || "none";
 
   // mulai/ganti kamera
   useEffect(() => {
@@ -79,11 +83,13 @@ export function CameraCapture({
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.filter = flt.css === "none" ? "none" : flt.css;
+    ctx.filter = cssStr;
     if (facing === "user") { ctx.translate(w, 0); ctx.scale(-1, 1); } // cermin selfie
     ctx.drawImage(v, 0, 0, w, h);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.filter = "none";
     if (flt.glow) drawGlow(ctx, w, h);
+    if (flt.white) { ctx.fillStyle = `rgba(255,255,255,${flt.white})`; ctx.fillRect(0, 0, w, h); }
     setShot(canvas.toDataURL("image/jpeg", 0.9));
   }
 
@@ -95,10 +101,11 @@ export function CameraCapture({
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.filter = flt.css === "none" ? "none" : flt.css;
+      ctx.filter = cssStr;
       ctx.drawImage(img, 0, 0);
       ctx.filter = "none";
       if (flt.glow) drawGlow(ctx, canvas.width, canvas.height);
+      if (flt.white) { ctx.fillStyle = `rgba(255,255,255,${flt.white})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
       setShot(canvas.toDataURL("image/jpeg", 0.92));
     };
     img.src = src;
@@ -121,7 +128,7 @@ export function CameraCapture({
         {shot ? (
           <img src={shot} alt="hasil" className="h-full w-full object-contain" />
         ) : galleryImg ? (
-          <img src={galleryImg} alt="galeri" className="h-full w-full object-contain" style={{ filter: flt.css }} />
+          <img src={galleryImg} alt="galeri" className="h-full w-full object-contain" style={{ filter: cssStr }} />
         ) : camError ? (
           <div className="grid h-full w-full place-items-center px-8 text-center text-white/70">
             Kamera tidak bisa diakses. Coba ambil dari galeri di bawah, atau izinkan kamera.
@@ -133,9 +140,13 @@ export function CameraCapture({
             playsInline
             muted
             className="h-full w-full object-cover"
-            style={{ filter: flt.css, transform: facing === "user" ? "scaleX(-1)" : "none" }}
+            style={{ filter: cssStr, transform: facing === "user" ? "scaleX(-1)" : "none" }}
           />
         )}
+        {/* lapisan putih untuk filter memutihkan */}
+        {!shot && flt.white ? (
+          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: flt.white }} />
+        ) : null}
 
         <button onClick={onClose} className="absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
           <X size={20} />
@@ -146,6 +157,15 @@ export function CameraCapture({
           </button>
         )}
       </div>
+
+      {/* slider terang (edit) */}
+      {!shot && (
+        <div className="flex items-center gap-3 bg-black px-4 pt-2 text-white">
+          <span className="text-xs">☀️ Terang</span>
+          <input type="range" min="0.7" max="1.6" step="0.01" value={bright} onChange={(e) => setBright(parseFloat(e.target.value))} className="flex-1 accent-fuchsia-500" />
+          <button onClick={() => setBright(1)} className="text-xs text-white/60">reset</button>
+        </div>
+      )}
 
       {/* filter strip */}
       {!shot && (

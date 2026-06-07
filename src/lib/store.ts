@@ -854,6 +854,9 @@ export const useStore = create<State>()(
           ...current,
           ...p,
           settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
+          // selalu mulai dari Beranda & tanpa profil terbuka (cegah state view rusak)
+          view: "feed",
+          profileUserId: null,
         };
       },
     }
