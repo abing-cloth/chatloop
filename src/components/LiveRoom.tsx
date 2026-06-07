@@ -54,6 +54,7 @@ export function LiveRoom({
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
+  const [gameScore, setGameScore] = useState(0);
 
   const endRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -147,10 +148,20 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} lut={fltDef.lut} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
+        )}
+
+        {/* HUD game kedip */}
+        {mode === "host" && ar === "kedipgame" && (
+          <div className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 text-center">
+            <div className="rounded-2xl bg-black/55 px-5 py-2 text-white shadow-lg backdrop-blur">
+              <span className="text-2xl font-extrabold">👁️ {gameScore}</span>
+              <p className="mt-0.5 text-[11px] text-white/80">Kedipkan mata untuk nambah skor!</p>
+            </div>
+          </div>
         )}
 
         {/* stiker (bisa digeser; klik-ganda untuk hapus) */}

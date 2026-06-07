@@ -3,6 +3,7 @@ import { getFaceLandmarker } from "./faceLandmarker";
 import { getSelfieSegmenter } from "./selfieSegmenter";
 import { reshapeFace, needsReshape, type ReshapeParams } from "./meshWarp";
 import { bilateral } from "./bilateral";
+import { applyLUT } from "./lut";
 export { getSelfieSegmenter, reshapeFace, needsReshape, type ReshapeParams };
 
 /** Isi buf dgn versi `source` yang dihaluskan (bilateral GLSL; fallback Gaussian) + brightness/saturate. */
@@ -36,6 +37,7 @@ export interface BeautyFx {
   makeup?: MakeupCfg; // riasan
   glow?: number;   // bloom cahaya dreamy (0-1)
   vignette?: number; // gelap di tepi (0-1)
+  lut?: string;    // color grading LUT (nama dari lib/lut.ts) — grade sinematik
 }
 
 interface MPMask { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }
@@ -354,4 +356,5 @@ export function renderBeauty(
     }
   }
   if ((fx.glow ?? 0) > 0 || (fx.vignette ?? 0) > 0) applyGlow(ctx, canvas, W, H, buf, fx.glow ?? 0, fx.vignette ?? 0);
+  if (fx.lut) { const g = applyLUT(canvas, W, H, fx.lut, 0.92); if (g) ctx.drawImage(g, 0, 0, W, H); }
 }

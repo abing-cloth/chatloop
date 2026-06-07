@@ -3,6 +3,7 @@ import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
 import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, tintStrength, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 import { loadGender, detectGender } from "../lib/genderDetect";
+import { applyLUT } from "../lib/lut";
 
 export type GenderMode = "auto" | "cewek" | "cowok";
 
@@ -31,6 +32,8 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string; group: st
   // Aksesori Fashion (kategori 12)
   { key: "anting", label: "Anting", icon: "💎", group: "Aksesori" },
   { key: "kalung", label: "Kalung", icon: "📿", group: "Aksesori" },
+  // Game / Interactive (kategori 10)
+  { key: "kedipgame", label: "Kedip Skor", icon: "👁️", group: "Game" },
 ];
 
 // Particle: set emoji per jenis (kategori 8). hati = naik dari bawah, lainnya jatuh.
@@ -72,16 +75,20 @@ export function LiveCamera({
   intensity = 1,
   background = "none",
   bgImage,
+  lut,
   effect,
   facing,
   onReady,
   onError,
+  onScore,
 }: {
   filterCss: string;
   genderMode?: GenderMode;
   intensity?: number; // 0..1.5 kekuatan keseluruhan beauty
   background?: string; // none|blur|hologram|studio|image
   bgImage?: string | null; // dataURL latar custom (mode image)
+  lut?: string | null; // color grading LUT (nama dari lib/lut.ts)
+  onScore?: (n: number) => void; // skor game kedip
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -127,6 +134,11 @@ export function LiveCamera({
   const bgRef = useRef(background);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
+  const lutRef = useRef(lut);
+  const scoreRef = useRef(0);
+  const blinkRef = useRef(false); // mata sedang tertutup?
+  const onScoreRef = useRef(onScore);
+  lutRef.current = lut; onScoreRef.current = onScore;
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
   glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity; bgRef.current = background;
@@ -150,6 +162,12 @@ export function LiveCamera({
     getFaceLandmarker().then((lm) => { lmRef.current = lm; });
     getSelfieSegmenter().then((s) => { segRef.current = s; });
   }, []);
+
+  // reset skor saat masuk/keluar game kedip
+  useEffect(() => {
+    scoreRef.current = 0; blinkRef.current = false; onScore?.(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effect]);
 
   // muat gambar latar custom
   useEffect(() => {
@@ -287,13 +305,28 @@ export function LiveCamera({
       }
     }
 
-    // Particle layer (kategori 8): jatuh/terbang, di-update tiap frame.
+    // Burst perayaan (game kedip): hamburkan partikel dari satu titik.
+    function burst(cx: number, cy: number, W: number) {
+      const set = ["💖", "⭐", "✨", "🎉", "🌟"];
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2 + Math.random() * 0.4, sp = (0.5 + Math.random() * 0.9) * W * 0.012;
+        particlesRef.current.push({
+          x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - W * 0.004,
+          rot: Math.random() * 6, spin: (Math.random() - 0.5) * 0.22,
+          fz: W * (0.04 + Math.random() * 0.03), g: set[(Math.random() * set.length) | 0],
+        });
+      }
+    }
+
+    // Particle layer (kategori 8 & burst game): jatuh/terbang, di-update tiap frame.
     function stepParticles(W: number, H: number, spawn: boolean) {
-      const set = PARTICLE[effRef.current];
+      const kind = effRef.current;
+      const set = PARTICLE[kind];
+      const isGame = kind === "kedipgame";
       const ps = particlesRef.current;
-      if (!set) { if (ps.length) particlesRef.current = []; return; }
-      const rise = effRef.current === "hati", snow = effRef.current === "salju";
-      if (spawn && ps.length < 70) {
+      if (!set && !isGame) { if (ps.length) particlesRef.current = []; return; }
+      const rise = kind === "hati", snow = kind === "salju";
+      if (set && spawn && ps.length < 70) {
         for (let i = 0; i < 2; i++) {
           ps.push({
             x: Math.random() * W, y: rise ? H + 24 : -24,
@@ -406,9 +439,23 @@ export function LiveCamera({
         }
         // 3) efek AR
         if (effRef.current !== "none") for (const face of facesRef.current) drawEffect(geoOf(face, W, H));
+        // 4) game kedip: deteksi kedip (EAR) -> skor + burst
+        if (effRef.current === "kedipgame" && facesRef.current[0]) {
+          const f = facesRef.current[0];
+          const ar = (Math.abs(f[159].y - f[145].y) / (Math.abs(f[33].x - f[133].x) || 1e-6)
+            + Math.abs(f[386].y - f[374].y) / (Math.abs(f[362].x - f[263].x) || 1e-6)) / 2;
+          if (ar < 0.15 && !blinkRef.current) blinkRef.current = true;
+          else if (ar > 0.25 && blinkRef.current) {
+            blinkRef.current = false; scoreRef.current += 1; onScoreRef.current?.(scoreRef.current);
+            const g = geoOf(f, W, H); burst(g.cx, g.cy, W);
+          }
+        }
       }
       if (effGlow > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, effGlow, vigRef.current);
-      stepParticles(W, H, fresh); // particle di lapisan paling atas
+      // grade LUT sinematik (lapisan akhir, sebelum partikel)
+      const ln = lutRef.current;
+      if (ln) { const gcv = applyLUT(c, W, H, ln, 0.92); if (gcv) ctx.drawImage(gcv, 0, 0, W, H); }
+      stepParticles(W, H, fresh); // particle/burst di lapisan paling atas
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);

@@ -8,7 +8,7 @@ export interface FilterDef extends BeautyFx {
   category: string;  // salah satu FILTER_CATEGORIES
 }
 
-export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro", "Seni"] as const;
+export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro", "Seni", "Sinema"] as const;
 
 /*
   ┌─ TEMPLATE FILTER (salin & ubah) ───────────────────────────────┐
@@ -70,6 +70,13 @@ export const FILTERS: FilterDef[] = [
   { key: "popart", label: "Pop Art", category: "Seni", filterCss: "saturate(2.4) contrast(1.6) hue-rotate(-6deg) brightness(1.04)", white: 0.1, tint: "#ffffff", eye: 1.12, lip: 1.06, glow: 0.2, vignette: 0.1 },
   { key: "anime", label: "Anime", category: "Seni", filterCss: "saturate(1.7) contrast(1.3) brightness(1.08)", white: 0.18, tint: "#fff2f6", body: 0.12, eye: 1.22, lip: 1.06, cheek: 0.93, nose: 0.9, glow: 0.24, vignette: 0.06,
     makeup: { lip: "#ff6f95", lipA: 0.34, blush: "#ff8fc0", blushA: 0.24, shadow: "#ffc0dd", shadowA: 0.2, liner: true } },
+
+  // ── Sinema (LUT — color grading WebGL nyata, lib/lut.ts) ──
+  { key: "sinematik", label: "Sinematik", category: "Sinema", filterCss: "none", white: 0.14, tint: "#fff6f0", body: 0.1, eye: 1.08, lip: 1.04, cheek: 0.97, glow: 0.12, vignette: 0.14, lut: "sinematik" },
+  { key: "vintagefilm", label: "Vintage Film", category: "Sinema", filterCss: "none", white: 0.08, tint: "#ffffff", eye: 1, lip: 1, glow: 0.08, vignette: 0.2, lut: "vintagefilm" },
+  { key: "dingin", label: "Dingin", category: "Sinema", filterCss: "none", white: 0.12, tint: "#f2f7ff", body: 0.1, eye: 1.06, lip: 1.03, glow: 0.1, vignette: 0.1, lut: "dingin" },
+  { key: "panas", label: "Golden Hour", category: "Sinema", filterCss: "none", white: 0.14, tint: "#fff3e6", body: 0.1, eye: 1.06, lip: 1.04, cheek: 0.98, glow: 0.16, vignette: 0.08, lut: "panas" },
+  { key: "drama", label: "Drama", category: "Sinema", filterCss: "none", white: 0.1, tint: "#ffffff", eye: 1.04, lip: 1.02, glow: 0.08, vignette: 0.22, lut: "drama" },
 ];
 
 export const filterByKey = (key: string) => FILTERS.find((f) => f.key === key) ?? FILTERS[0];
