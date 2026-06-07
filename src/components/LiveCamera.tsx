@@ -75,20 +75,24 @@ export function LiveCamera({
   intensity = 1,
   background = "none",
   bgImage,
+  bgVideo,
   lut,
   effect,
   facing,
   onReady,
   onError,
   onScore,
+  onCanvasReady,
 }: {
   filterCss: string;
   genderMode?: GenderMode;
   intensity?: number; // 0..1.5 kekuatan keseluruhan beauty
-  background?: string; // none|blur|hologram|studio|image
+  background?: string; // none|blur|hologram|studio|image|video
   bgImage?: string | null; // dataURL latar custom (mode image)
+  bgVideo?: string | null; // objectURL video latar (mode video)
   lut?: string | null; // color grading LUT (nama dari lib/lut.ts)
   onScore?: (n: number) => void; // skor game kedip
+  onCanvasReady?: (c: HTMLCanvasElement) => void; // ekspos kanvas utk capture
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -133,6 +137,8 @@ export function LiveCamera({
   const intenRef = useRef(intensity);
   const bgRef = useRef(background);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const bgVidRef = useRef<HTMLVideoElement | null>(null);
+  const smoothRef = useRef<Pt[][]>([]); // landmark ter-smoothing (anti-jitter)
   const particlesRef = useRef<Particle[]>([]);
   const lutRef = useRef(lut);
   const scoreRef = useRef(0);
@@ -177,6 +183,16 @@ export function LiveCamera({
     img.src = bgImage;
   }, [bgImage]);
 
+  // muat video latar custom (loop, mute) -> latar bergerak "hidup"
+  useEffect(() => {
+    if (!bgVideo) { bgVidRef.current?.pause(); bgVidRef.current = null; return; }
+    const vid = document.createElement("video");
+    vid.src = bgVideo; vid.loop = true; vid.muted = true; vid.playsInline = true;
+    vid.play().catch(() => {});
+    bgVidRef.current = vid;
+    return () => { vid.pause(); vid.src = ""; };
+  }, [bgVideo]);
+
   // auto-deteksi gender (cewek/cowok) tiap ~2 detik saat mode "auto"
   useEffect(() => {
     if (genderMode !== "auto") { detectedRef.current = genderMode === "cowok" ? "male" : "female"; return; }
@@ -194,6 +210,7 @@ export function LiveCamera({
     if (!v || !c) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
+    onCanvasReady?.(c); // ekspos kanvas ke induk (untuk capture foto/video)
     if (!bufRef.current) bufRef.current = document.createElement("canvas");
     if (!maskRef.current) maskRef.current = document.createElement("canvas");
     if (!layerRef.current) layerRef.current = document.createElement("canvas");
@@ -376,7 +393,7 @@ export function LiveCamera({
       ctx.filter = "none";
 
       const now = performance.now();
-      const fresh = now - lastDetect > 55;
+      const fresh = now - lastDetect > 45;
       if (fresh) lastDetect = now;
 
       // gender -> femaleness (1=cewek penuh, 0=cowok natural) + intensitas keseluruhan
@@ -398,10 +415,16 @@ export function LiveCamera({
         }
       }
       const haveMask = !!maskRef.current && maskRef.current.width > 0;
-      // 0) ganti latar (Background)
+      // 0) ganti latar (Background) — termasuk foto & video custom
       if (bgRef.current !== "none" && haveMask) {
-        const bi = bgImgRef.current;
-        applyBackground(ctx, v, maskRef.current!, W, H, bgRef.current, bufRef.current!, bi, bi?.naturalWidth || 0, bi?.naturalHeight || 0);
+        let mode = bgRef.current; let bgSrc: CanvasImageSource | null = null, bw = 0, bh = 0;
+        if (bgRef.current === "image") { const bi = bgImgRef.current; bgSrc = bi; bw = bi?.naturalWidth || 0; bh = bi?.naturalHeight || 0; }
+        else if (bgRef.current === "video") {
+          const vd = bgVidRef.current;
+          if (vd && vd.readyState >= 2 && vd.videoWidth) { mode = "image"; bgSrc = vd; bw = vd.videoWidth; bh = vd.videoHeight; }
+          else mode = "blur"; // fallback selagi video belum siap
+        }
+        applyBackground(ctx, v, maskRef.current!, W, H, mode, bufRef.current!, bgSrc, bw, bh);
       }
       // 1) kulit seluruh badan
       if (bodyRef.current > 0 && I > 0.02 && haveMask) {
@@ -423,31 +446,44 @@ export function LiveCamera({
       const lm = lmRef.current;
       if (needFaces && lm) {
         if (fresh) { try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
+        // === SMOOTHING temporal (EMA) -> efek stabil, tak gemetar ===
+        const raw = facesRef.current, sm = smoothRef.current;
+        if (sm.length !== raw.length) {
+          smoothRef.current = raw.map((f) => f.map((p) => ({ x: p.x, y: p.y, z: p.z })));
+        } else {
+          const a = 0.5; // 0..1: kecil=lebih halus/lambat, besar=lebih responsif
+          for (let i = 0; i < raw.length; i++) {
+            const s = sm[i], t = raw[i];
+            if (!s || !t || s.length !== t.length) { sm[i] = t.map((p) => ({ x: p.x, y: p.y, z: p.z })); continue; }
+            for (let j = 0; j < t.length; j++) { s[j].x += (t[j].x - s[j].x) * a; s[j].y += (t[j].y - s[j].y) * a; s[j].z += (t[j].z - s[j].z) * a; }
+          }
+        }
+        const faces = smoothRef.current;
         // 1) kulit wajah + makeup
-        for (const face of facesRef.current) {
+        for (const face of faces) {
           const g = geoOf(face, W, H);
           if (effWhite > 0) blendSkin(g, W, H, effWhite, tintRef.current);
           if (effMakeup) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, effMakeup, g.faceW);
         }
         // 2) mesh-warp reshape (slim/V-line, mata, hidung, bibir)
-        if (facesRef.current.length && needsReshape(rp)) {
+        if (faces.length && needsReshape(rp)) {
           const rb = rbufRef.current!, rctx = rb.getContext("2d");
           if (rctx) {
             rb.width = W; rb.height = H; rctx.clearRect(0, 0, W, H); rctx.drawImage(c, 0, 0, W, H);
-            for (const face of facesRef.current) reshapeFace(ctx, rb, face as unknown as { x: number; y: number }[], W, H, rp);
+            for (const face of faces) reshapeFace(ctx, rb, face as unknown as { x: number; y: number }[], W, H, rp);
           }
         }
         // 3) efek AR
-        if (effRef.current !== "none") for (const face of facesRef.current) drawEffect(geoOf(face, W, H));
-        // 4) game kedip: deteksi kedip (EAR) -> skor + burst
-        if (effRef.current === "kedipgame" && facesRef.current[0]) {
-          const f = facesRef.current[0];
-          const ar = (Math.abs(f[159].y - f[145].y) / (Math.abs(f[33].x - f[133].x) || 1e-6)
-            + Math.abs(f[386].y - f[374].y) / (Math.abs(f[362].x - f[263].x) || 1e-6)) / 2;
+        if (effRef.current !== "none") for (const face of faces) drawEffect(geoOf(face, W, H));
+        // 4) game kedip: deteksi kedip (EAR) — pakai landmark RAW (lebih responsif utk kedip cepat)
+        const fr = facesRef.current[0];
+        if (effRef.current === "kedipgame" && fr) {
+          const ar = (Math.abs(fr[159].y - fr[145].y) / (Math.abs(fr[33].x - fr[133].x) || 1e-6)
+            + Math.abs(fr[386].y - fr[374].y) / (Math.abs(fr[362].x - fr[263].x) || 1e-6)) / 2;
           if (ar < 0.15 && !blinkRef.current) blinkRef.current = true;
           else if (ar > 0.25 && blinkRef.current) {
             blinkRef.current = false; scoreRef.current += 1; onScoreRef.current?.(scoreRef.current);
-            const g = geoOf(f, W, H); burst(g.cx, g.cy, W);
+            const g = geoOf(faces[0] ?? fr, W, H); burst(g.cx, g.cy, W);
           }
         }
       }

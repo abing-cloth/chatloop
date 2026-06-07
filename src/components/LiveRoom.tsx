@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, VideoOff, X } from "lucide-react";
+import { Camera, Circle, Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, Square, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
@@ -55,17 +55,65 @@ export function LiveRoom({
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [gameScore, setGameScore] = useState(0);
+  const [bgVideo, setBgVideo] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [flash, setFlash] = useState(false);
 
   const endRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragId = useRef<number | null>(null);
   const bgFileRef = useRef<HTMLInputElement>(null);
+  const bgVidFileRef = useRef<HTMLInputElement>(null);
+  const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   async function pickBg(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (f) { setBgImage(await fileToDataUrl(f)); setBg("image"); }
     e.target.value = "";
   }
+  function pickBgVideo(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) { setBgVideo((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f); }); setBg("video"); }
+    e.target.value = "";
+  }
+
+  // unduh blob -> tersimpan ke Galeri/Unduhan perangkat
+  function download(blob: Blob, ext: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `chatloop-${Date.now()}.${ext}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  // 📸 ambil foto (dengan filter) — di-mirror utk kamera depan, simpan PNG
+  function snapshot() {
+    const src = liveCanvasRef.current; if (!src || !src.width) return;
+    const cv = document.createElement("canvas"); cv.width = src.width; cv.height = src.height;
+    const cx = cv.getContext("2d"); if (!cx) return;
+    if (facing === "user") { cx.translate(cv.width, 0); cx.scale(-1, 1); }
+    cx.drawImage(src, 0, 0);
+    cv.toBlob((b) => b && download(b, "png"), "image/png");
+    setFlash(true); setTimeout(() => setFlash(false), 180);
+  }
+
+  // ⏺ rekam video (canvas + filter) -> WebM
+  function toggleRecord() {
+    if (recording) { recRef.current?.stop(); return; }
+    const src = liveCanvasRef.current; if (!src || !src.captureStream) return;
+    try {
+      const stream = src.captureStream(30);
+      const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+      const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      mr.onstop = () => { download(new Blob(chunksRef.current, { type: "video/webm" }), "webm"); setRecording(false); };
+      mr.start(); recRef.current = mr; setRecording(true);
+    } catch { /* perangkat tak mendukung */ }
+  }
+  useEffect(() => () => { const mr = recRef.current; try { if (mr && mr.state === "recording") mr.stop(); } catch { /* */ } }, []);
 
   const fltDef = filterByKey(filter);
   const filterCss = fltDef.filterCss ?? "none";
@@ -103,7 +151,7 @@ export function LiveRoom({
     } catch { /* */ }
   }, []);
   useEffect(() => {
-    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity, bg: bg === "image" ? "none" : bg })); } catch { /* */ }
+    try { localStorage.setItem("loop-live-prefs", JSON.stringify({ filter, ar, genderMode, intensity, bg: (bg === "image" || bg === "video") ? "none" : bg })); } catch { /* */ }
   }, [filter, ar, genderMode, intensity, bg]);
 
   // geser stiker
@@ -148,7 +196,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} lut={fltDef.lut} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -213,8 +261,16 @@ export function LiveRoom({
             <button onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))} title="Ganti kamera" className="absolute right-3 top-40 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur hover:bg-black/60">
               <SwitchCamera size={20} />
             </button>
+            <button onClick={snapshot} title="Ambil foto" className="absolute right-3 top-52 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur hover:bg-black/60 active:scale-95">
+              <Camera size={20} />
+            </button>
+            <button onClick={toggleRecord} title={recording ? "Stop rekam" : "Rekam video"} className={cn("absolute right-3 top-64 grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95", recording ? "bg-red-600 animate-pulse" : "bg-black/40 hover:bg-black/60")}>
+              {recording ? <Square size={16} className="fill-white" /> : <Circle size={20} className="fill-red-500 text-red-500" />}
+            </button>
           </>
         )}
+        {/* kilat saat ambil foto */}
+        {flash && <div className="pointer-events-none absolute inset-0 z-30 bg-white/80" />}
 
         {/* komentar */}
         <div className="absolute inset-x-0 bottom-28 max-h-40 space-y-2 overflow-hidden px-3">
@@ -266,7 +322,9 @@ export function LiveRoom({
                 <button key={b} onClick={() => setBg(b)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === b ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{lbl}</button>
               ))}
               <button onClick={() => bgFileRef.current?.click()} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === "image" ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>📷 Foto</button>
+              <button onClick={() => bgVidFileRef.current?.click()} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === "video" ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>🎬 Video</button>
               <input ref={bgFileRef} type="file" accept="image/*" hidden onChange={pickBg} />
+              <input ref={bgVidFileRef} type="file" accept="video/*" hidden onChange={pickBgVideo} />
             </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>
