@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
+import { LiveCamera, FACE_EFFECTS } from "./LiveCamera";
 import type { LiveStream } from "../lib/types";
 
 interface LiveComment { id: number; name: string; avatar: string; text: string }
@@ -16,29 +17,17 @@ const CHATTER = [
 ];
 
 const FILTERS = [
-  { key: "normal", label: "Normal", css: "none" },
-  { key: "cerah", label: "Cerah", css: "brightness(1.14) contrast(1.04) saturate(1.15)" },
-  { key: "putih", label: "Putih", css: "brightness(1.28) contrast(0.9) saturate(0.92)" },
-  { key: "mulus", label: "Mulus", css: "brightness(1.12) saturate(1.08) contrast(1.02) blur(1px)" },
-  { key: "cantik", label: "Cantik", css: "brightness(1.2) saturate(1.18) contrast(1.02) sepia(0.12)" },
-  { key: "vivid", label: "Vivid", css: "saturate(1.6) contrast(1.12)" },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)" },
-  { key: "sepia", label: "Sepia", css: "sepia(0.7)" },
-  { key: "vintage", label: "Vintage", css: "sepia(0.4) contrast(0.92) brightness(1.05) saturate(1.25)" },
-  { key: "dingin", label: "Dingin", css: "hue-rotate(-18deg) saturate(1.25) brightness(1.05)" },
-  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.05)" },
-];
-
-// Efek wajah (AR sederhana) — prop emoji menempel di area wajah
-const AR_PROPS = [
-  { key: "none", label: "Tanpa", emoji: "", top: 0, size: 0 },
-  { key: "glasses", label: "Kacamata", emoji: "🕶️", top: 33, size: 72 },
-  { key: "crown", label: "Mahkota", emoji: "👑", top: 8, size: 64 },
-  { key: "dog", label: "Anjing", emoji: "🐶", top: 24, size: 110 },
-  { key: "party", label: "Pesta", emoji: "🥳", top: 26, size: 110 },
-  { key: "clown", label: "Badut", emoji: "🤡", top: 26, size: 110 },
-  { key: "halo", label: "Malaikat", emoji: "😇", top: 24, size: 110 },
-  { key: "cool", label: "Keren", emoji: "😎", top: 26, size: 110 },
+  { key: "normal", label: "Normal", css: "none", white: 0 },
+  { key: "cerah", label: "Cerah", css: "brightness(1.2) contrast(1.02) saturate(1.12)", white: 0 },
+  { key: "putih", label: "Putih", css: "brightness(1.35) contrast(0.84) saturate(0.82)", white: 0.2 },
+  { key: "putih2", label: "Putih+", css: "brightness(1.5) contrast(0.78) saturate(0.7)", white: 0.34 },
+  { key: "mulus", label: "Mulus", css: "brightness(1.18) saturate(1.05) contrast(1.0) blur(1.6px)", white: 0.1 },
+  { key: "cantik", label: "Cantik", css: "brightness(1.26) saturate(1.16) contrast(1.0) sepia(0.08)", white: 0.12 },
+  { key: "vivid", label: "Vivid", css: "saturate(1.6) contrast(1.12)", white: 0 },
+  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0 },
+  { key: "vintage", label: "Vintage", css: "sepia(0.4) contrast(0.92) brightness(1.05) saturate(1.25)", white: 0 },
+  { key: "dingin", label: "Dingin", css: "hue-rotate(-18deg) saturate(1.25) brightness(1.08)", white: 0 },
+  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.08)", white: 0 },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
@@ -74,22 +63,13 @@ export function LiveRoom({
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragId = useRef<number | null>(null);
 
-  const filterCss = FILTERS.find((f) => f.key === filter)?.css ?? "none";
-  const arProp = AR_PROPS.find((a) => a.key === ar);
-
-  useEffect(() => {
-    if (mode !== "host") return;
-    let media: MediaStream | null = null;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: facing }, audio: false })
-      .then((s) => { media = s; if (videoRef.current) videoRef.current.srcObject = s; setCamError(false); })
-      .catch(() => setCamError(true));
-    return () => media?.getTracks().forEach((t) => t.stop());
-  }, [mode, facing]);
+  const fltDef = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
+  const filterCss = fltDef.css ?? "none";
+  const whiteOverlay = fltDef.white ?? 0;
 
   useEffect(() => {
     const c = setInterval(() => {
@@ -145,20 +125,10 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" style={{ filter: filterCss, transform: facing === "user" ? "scaleX(-1)" : "none" }} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
-        )}
-
-        {/* efek wajah AR */}
-        {arProp && arProp.emoji && (
-          <span
-            className="animate-pop pointer-events-none absolute left-1/2 -translate-x-1/2 select-none drop-shadow-lg"
-            style={{ top: `${arProp.top}%`, fontSize: arProp.size }}
-          >
-            {arProp.emoji}
-          </span>
         )}
 
         {/* stiker (bisa digeser; klik-ganda untuk hapus) */}
@@ -253,9 +223,9 @@ export function LiveRoom({
                 ? FILTERS.map((f) => (
                     <button key={f.key} onClick={() => setFilter(f.key)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", filter === f.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>{f.label}</button>
                   ))
-                : AR_PROPS.map((a) => (
+                : FACE_EFFECTS.map((a) => (
                     <button key={a.key} onClick={() => setAr(a.key)} className={cn("flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", ar === a.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>
-                      {a.emoji && <span className="text-base">{a.emoji}</span>}{a.label}
+                      <span className="text-base">{a.icon}</span>{a.label}
                     </button>
                   ))}
             </div>
