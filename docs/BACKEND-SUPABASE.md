@@ -11,12 +11,15 @@ kunci, app tetap berjalan seperti sekarang.
 2. **Jalankan skema**: buka **SQL Editor** → tempel isi [`supabase/schema.sql`](../supabase/schema.sql) → Run.
    (membuat tabel `profiles`, `posts`, `lives`, `messages` + RLS + realtime.)
 3. **Ambil kunci**: Project Settings → **API** → salin `Project URL` & `anon public key`.
-4. **Isi env**: salin `.env.example` → `.env`, isi:
-   ```
-   VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGci...
-   ```
-   Untuk GitHub Actions/deploy: tambahkan keduanya sebagai **Secrets** & inject saat build.
+4. **Pasang kunci** (pilih salah satu):
+   - **Produksi (dipakai sekarang) — GitHub Secrets:** repo `abing-cloth/chatloop` →
+     **Settings → Secrets and variables → Actions → New repository secret**, buat 2 secret:
+     - `VITE_SUPABASE_URL` = `https://xxxx.supabase.co`
+     - `VITE_SUPABASE_ANON_KEY` = `eyJhbGci...`
+
+     Workflow `.github/workflows/deploy.yml` **sudah meng-inject** keduanya saat `npm run build`
+     (untuk /chatloop & /c). Begitu secret terisi, **push/redeploy berikutnya** otomatis aktif backend.
+   - **Lokal (dev):** salin `.env.example` → `.env`, isi kedua nilai, lalu `npm run dev`.
 5. **(Opsional) Storage**: buat bucket publik `media` untuk foto/audio.
 
 Begitu kunci terisi, `src/lib/supabase.ts` → `supabaseEnabled` menjadi `true` dan klien
