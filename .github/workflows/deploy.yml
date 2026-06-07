@@ -40,3 +40,29 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Alamat pendek abing-cloth.github.io/c — build --base=/c/ lalu push ke repo abing-cloth/c
+  deploy-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build -- --base=/c/
+      - name: Push ke repo c (alamat pendek)
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.C_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          cd dist && touch .nojekyll
+          git init -q -b main
+          git config user.email "ci@chatloop"
+          git config user.name "chatloop-ci"
+          git add -A
+          git commit -q -m "deploy /c dari chatloop@${GITHUB_SHA::7}"
+          git remote add origin git@github.com:abing-cloth/c.git
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" git push -f origin main
