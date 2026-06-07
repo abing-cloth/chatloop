@@ -2,7 +2,18 @@
 import { getFaceLandmarker } from "./faceLandmarker";
 import { getSelfieSegmenter } from "./selfieSegmenter";
 import { reshapeFace, needsReshape, type ReshapeParams } from "./meshWarp";
+import { bilateral } from "./bilateral";
 export { getSelfieSegmenter, reshapeFace, needsReshape, type ReshapeParams };
+
+/** Isi buf dgn versi `source` yang dihaluskan (bilateral GLSL; fallback Gaussian) + brightness/saturate. */
+export function smoothInto(buf: HTMLCanvasElement, source: CanvasImageSource, W: number, H: number, bright: number, sat: number) {
+  const bctx = buf.getContext("2d"); if (!bctx) return;
+  buf.width = W; buf.height = H;
+  const b = bilateral(source as TexImageSource, W, H, 0.13);
+  bctx.clearRect(0, 0, W, H);
+  if (b) { bctx.filter = `brightness(${bright.toFixed(3)}) saturate(${sat})`; bctx.drawImage(b, 0, 0, W, H); bctx.filter = "none"; }
+  else { bctx.filter = `blur(${Math.max(3, W * 0.007)}px) brightness(${bright.toFixed(3)}) saturate(${sat})`; bctx.drawImage(source, 0, 0, W, H); bctx.filter = "none"; }
+}
 
 export interface MakeupCfg {
   lip?: string; lipA?: number;       // lipstik warna + opacity
@@ -51,11 +62,7 @@ export function applyBodySkin(
   ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement,
   W: number, H: number, strength: number, color: string, buf: HTMLCanvasElement, layer: HTMLCanvasElement,
 ) {
-  const bctx = buf.getContext("2d"); if (!bctx) return;
-  buf.width = W; buf.height = H;
-  bctx.filter = `blur(${Math.max(2, W * 0.005)}px) brightness(${(1 + 0.22 * strength).toFixed(3)}) saturate(1.04) contrast(0.98)`;
-  bctx.drawImage(source, 0, 0, W, H);
-  bctx.filter = "none";
+  smoothInto(buf, source, W, H, 1 + 0.22 * strength, 1.04);
   const lctx = layer.getContext("2d"); if (!lctx) return;
   layer.width = W; layer.height = H;
   lctx.clearRect(0, 0, W, H);
@@ -192,11 +199,7 @@ function geoOf(lm: XY[], W: number, H: number): Geo {
 }
 
 function blendSkin(ctx: CanvasRenderingContext2D, source: CanvasImageSource, g: Geo, W: number, H: number, strength: number, color: string, buf: HTMLCanvasElement, fbuf: HTMLCanvasElement) {
-  const bctx = buf.getContext("2d"); if (!bctx) return;
-  buf.width = W; buf.height = H;
-  bctx.filter = `blur(${Math.max(3, W * 0.008)}px) brightness(${(1 + 0.3 * strength).toFixed(3)}) saturate(1.05) contrast(0.97)`;
-  bctx.drawImage(source, 0, 0, W, H);
-  bctx.filter = "none";
+  smoothInto(buf, source, W, H, 1 + 0.3 * strength, 1.05);
   const pad = 1.18, fw = Math.max(8, g.rx * 2 * pad), fh = Math.max(8, g.ry * 2 * pad);
   const x0 = g.cx - fw / 2, y0 = g.cy - fh / 2;
   fbuf.width = Math.round(fw); fbuf.height = Math.round(fh);

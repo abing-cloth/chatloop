@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
-import { LiveCamera, FACE_EFFECTS } from "./LiveCamera";
+import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
 import { MAKEUP } from "../lib/faceFx";
 import type { LiveStream } from "../lib/types";
 
@@ -60,6 +60,7 @@ export function LiveRoom({
   const [ar, setAr] = useState("none");
   const [panel, setPanel] = useState<null | "sticker" | "efek">(null);
   const [efekTab, setEfekTab] = useState<"filter" | "wajah">("filter");
+  const [genderMode, setGenderMode] = useState<GenderMode>("auto");
   const [text, setText] = useState("");
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
@@ -134,7 +135,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} makeup={MAKEUP[filter]} glow={glow} vignette={vignette} genderMode={genderMode} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -223,6 +224,12 @@ export function LiveRoom({
         {/* panel efek (filter + wajah) */}
         {panel === "efek" && (
           <div className="absolute inset-x-0 bottom-16 px-3 pb-2">
+            {/* gender: atur kekuatan filter otomatis (cewek/cowok) */}
+            <div className="mb-2 flex gap-1.5">
+              {([["auto", "🤖 Auto"], ["cewek", "👩 Cewek"], ["cowok", "👨 Cowok"]] as const).map(([g, lbl]) => (
+                <button key={g} onClick={() => setGenderMode(g)} className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur", genderMode === g ? "bg-fuchsia-500 text-white" : "bg-white/20 text-white")}>{lbl}</button>
+              ))}
+            </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>
               <button onClick={() => setEfekTab("wajah")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "wajah" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Efek Wajah</button>

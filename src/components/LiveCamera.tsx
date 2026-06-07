@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, reshapeFace, needsReshape, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
+import { loadGender, detectGender } from "../lib/genderDetect";
+
+export type GenderMode = "auto" | "cewek" | "cowok";
 
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
@@ -32,12 +35,14 @@ export function LiveCamera({
   makeup,
   glow = 0,
   vignette = 0,
+  genderMode = "auto",
   effect,
   facing,
   onReady,
   onError,
 }: {
   filterCss: string;
+  genderMode?: GenderMode;
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
   tint?: string;
   eyeScale?: number; // perbesar mata (ubah fisik)
@@ -77,9 +82,11 @@ export function LiveCamera({
   const glowRef = useRef(glow);
   const vigRef = useRef(vignette);
   const rbufRef = useRef<HTMLCanvasElement | null>(null);
+  const genderModeRef = useRef(genderMode);
+  const detectedRef = useRef<"male" | "female" | null>(null);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
-  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose;
+  glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode;
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +107,18 @@ export function LiveCamera({
     getFaceLandmarker().then((lm) => { lmRef.current = lm; });
     getSelfieSegmenter().then((s) => { segRef.current = s; });
   }, []);
+
+  // auto-deteksi gender (cewek/cowok) tiap ~2 detik saat mode "auto"
+  useEffect(() => {
+    if (genderMode !== "auto") { detectedRef.current = genderMode === "cowok" ? "male" : "female"; return; }
+    let alive = true; let timer: ReturnType<typeof setInterval> | null = null;
+    loadGender().then((ok) => {
+      if (!ok || !alive) return;
+      const tick = async () => { const v = videoRef.current; if (v) { const g = await detectGender(v); if (alive && g) detectedRef.current = g; } };
+      tick(); timer = setInterval(tick, 2000);
+    });
+    return () => { alive = false; if (timer) clearInterval(timer); };
+  }, [genderMode]);
 
   useEffect(() => {
     const v = videoRef.current, c = canvasRef.current;
@@ -125,11 +144,7 @@ export function LiveCamera({
 
     // proses KULIT: haluskan + cerahkan + tint, di-blend HALUS (feather) -> tanpa bulatan
     function blendSkin(g: Geo, W: number, H: number, strength: number, color: string) {
-      const bctx = buf.getContext("2d"); if (!bctx) return;
-      buf.width = W; buf.height = H;
-      bctx.filter = `blur(${Math.max(3, W * 0.008)}px) brightness(${(1 + 0.3 * strength).toFixed(3)}) saturate(1.05) contrast(0.97)`;
-      bctx.drawImage(v!, 0, 0, W, H);
-      bctx.filter = "none";
+      smoothInto(buf, v!, W, H, 1 + 0.3 * strength, 1.05);
 
       const pad = 1.18, fw = Math.max(8, g.rx * 2 * pad), fh = Math.max(8, g.ry * 2 * pad);
       const x0 = g.cx - fw / 2, y0 = g.cy - fh / 2;
@@ -244,12 +259,20 @@ export function LiveCamera({
         }
       }
 
+      // gender -> femaleness (1=cewek penuh, 0=cowok natural). Auto pakai hasil deteksi.
+      const gm = genderModeRef.current;
+      const fem = gm === "cewek" ? 1 : gm === "cowok" ? 0 : (detectedRef.current === "male" ? 0 : 1);
+      const effWhite = whiteRef.current > 0 ? Math.max(0.06, whiteRef.current * (0.5 + 0.5 * fem)) : 0;
+      const effGlow = glowRef.current * (0.4 + 0.6 * fem);
+      const effMakeup = fem >= 0.4 ? makeupRef.current : undefined; // cowok: tanpa makeup
       const rp: ReshapeParams = {
-        eye: eyeRef.current, lip: lipRef.current, nose: noseRef.current,
-        slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 : 0,
-        vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 : 0,
+        eye: 1 + (eyeRef.current - 1) * fem,        // cowok: tak membesarkan mata
+        lip: 1 + (lipRef.current - 1) * fem,
+        nose: 1 - (1 - noseRef.current) * (0.4 + 0.6 * fem),
+        slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 * fem : 0,
+        vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 * fem : 0,
       };
-      const beauty = whiteRef.current > 0 || makeupRef.current != null || needsReshape(rp);
+      const beauty = effWhite > 0 || effMakeup != null || needsReshape(rp);
       const needFaces = effRef.current !== "none" || beauty;
       const lm = lmRef.current;
       if (needFaces && lm) {
@@ -257,8 +280,8 @@ export function LiveCamera({
         // 1) kulit wajah + makeup
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
-          if (whiteRef.current > 0) blendSkin(g, W, H, whiteRef.current, tintRef.current);
-          if (makeupRef.current) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, makeupRef.current, g.faceW);
+          if (effWhite > 0) blendSkin(g, W, H, effWhite, tintRef.current);
+          if (effMakeup) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, effMakeup, g.faceW);
         }
         // 2) mesh-warp reshape (slim/V-line, mata, hidung, bibir)
         if (facesRef.current.length && needsReshape(rp)) {
@@ -271,7 +294,7 @@ export function LiveCamera({
         // 3) efek AR
         if (effRef.current !== "none") for (const face of facesRef.current) drawEffect(geoOf(face, W, H));
       }
-      if (glowRef.current > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, glowRef.current, vigRef.current);
+      if (effGlow > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, effGlow, vigRef.current);
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
