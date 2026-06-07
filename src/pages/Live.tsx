@@ -9,6 +9,7 @@ import type { LiveStream } from "../lib/types";
 interface HostConfig {
   title: string;
   category: string;
+  id: string;
 }
 
 // kategori live baku — selalu tampil untuk semua pengguna (tak bergantung siaran yang ada)
@@ -20,7 +21,21 @@ export function Live() {
   const reminderIds = useStore((s) => s.reminderIds);
   const toggleReminder = useStore((s) => s.toggleReminder);
   const user = useStore((s) => s.user);
+  const me = useStore((s) => s.me());
+  const allUsers = useStore((s) => s.users);
+  const following = useStore((s) => s.followingIds);
+  const startLive = useStore((s) => s.startLive);
+  const endLive = useStore((s) => s.endLive);
   const tr = useT();
+
+  // teman bisa ditandai utk diundang nonton (yang diikuti dulu)
+  const [invited, setInvited] = useState<string[]>([]);
+  const [friendQuery, setFriendQuery] = useState("");
+  const friends = allUsers
+    .filter((u) => u.id !== me.id)
+    .filter((u) => !friendQuery.trim() || (u.name + u.username).toLowerCase().includes(friendQuery.toLowerCase()))
+    .sort((a, b) => Number(following.includes(b.id)) - Number(following.includes(a.id)));
+  const toggleInvite = (id: string) => setInvited((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const categories = ["Semua", ...Array.from(new Set([...LIVE_CATEGORIES, ...lives.map((l) => l.category)]))];
   const [cat, setCat] = useState("Semua");
@@ -35,8 +50,10 @@ export function Live() {
   const filtered = cat === "Semua" ? lives : lives.filter((l) => l.category === cat);
 
   function goLive() {
-    setHosting({ title: formTitle.trim() || "Siaran langsung", category: formCat });
-    setSetup(false);
+    const title = formTitle.trim() || "Siaran langsung";
+    const id = startLive({ title, category: formCat, invited });
+    setHosting({ title, category: formCat, id });
+    setSetup(false); setInvited([]); setFriendQuery("");
   }
 
   return (
@@ -210,6 +227,32 @@ export function Live() {
                 ))}
             </div>
 
+            {/* tandai teman utk diundang nonton */}
+            <label className="mb-1 block text-xs font-medium text-zinc-500">Tandai teman (undang nonton)</label>
+            <input
+              value={friendQuery}
+              onChange={(e) => setFriendQuery(e.target.value)}
+              placeholder="Cari nama teman..."
+              className="mb-2 w-full rounded-xl bg-zinc-100 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-300 dark:bg-zinc-800"
+            />
+            <div className="mb-2 max-h-32 space-y-1 overflow-y-auto">
+              {friends.slice(0, 30).map((u) => {
+                const on = invited.includes(u.id);
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => toggleInvite(u.id)}
+                    className={cn("flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition", on ? "bg-fuchsia-50 dark:bg-fuchsia-950/40" : "hover:bg-zinc-50 dark:hover:bg-zinc-800")}
+                  >
+                    <img src={u.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>
+                    <span className={cn("grid h-5 w-5 place-items-center rounded-full border text-[11px]", on ? "border-fuchsia-500 bg-fuchsia-500 text-white" : "border-zinc-300 text-transparent dark:border-zinc-600")}>✓</span>
+                  </button>
+                );
+              })}
+            </div>
+            {invited.length > 0 && <p className="mb-3 text-xs text-fuchsia-600 dark:text-fuchsia-400">{invited.length} teman akan diundang (dapat pesan ajakan).</p>}
+
             <button
               onClick={goLive}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-pink-600 py-3 text-sm font-semibold text-white transition hover:opacity-90"
@@ -231,7 +274,7 @@ export function Live() {
           mode="host"
           title={hosting.title}
           category={hosting.category}
-          onClose={() => setHosting(null)}
+          onClose={() => { endLive(hosting.id); setHosting(null); }}
         />
       )}
     </div>

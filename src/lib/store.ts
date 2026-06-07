@@ -153,6 +153,9 @@ interface State {
   toggleSave: (postId: string) => void;
   toggleFollow: (userId: string) => void;
   toggleReminder: (scheduledId: string) => void;
+  // siaran langsung milik pengguna -> tampil di beranda & Live semua orang
+  startLive: (data: { title: string; category: string; thumbnail?: string; invited?: string[] }) => string;
+  endLive: (id: string) => void;
 
   // marketplace
   addProduct: (data: {
@@ -328,6 +331,26 @@ export const useStore = create<State>()(
             ? s.reminderIds.filter((id) => id !== scheduledId)
             : [scheduledId, ...s.reminderIds],
         })),
+
+      startLive: ({ title, category, thumbnail, invited }) => {
+        const s = get();
+        const me = s.user(s.currentUserId);
+        const id = uid("lv");
+        const live: LiveStream = {
+          id, userId: s.currentUserId, title,
+          thumbnail: thumbnail || me.cover || me.avatar,
+          viewers: 1 + (invited?.length ?? 0),
+          category,
+        };
+        set((st) => ({ liveStreams: [live, ...st.liveStreams] }));
+        // undang teman: kirim DM "aku lagi live, nonton yuk"
+        for (const uidv of invited ?? []) {
+          try { get().sendMessage(uidv, `🔴 Aku lagi LIVE: "${title}" — nonton yuk!`); } catch { /* */ }
+        }
+        return id;
+      },
+
+      endLive: (id) => set((s) => ({ liveStreams: s.liveStreams.filter((l) => l.id !== id) })),
 
       addProduct: ({ name, price, image, description, category }) =>
         set((s) => ({

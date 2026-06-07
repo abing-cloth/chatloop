@@ -67,6 +67,7 @@ export function LiveRoom({
   const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const micRef = useRef<MediaStream | null>(null);
 
   async function pickBg(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -99,21 +100,31 @@ export function LiveRoom({
     setFlash(true); setTimeout(() => setFlash(false), 180);
   }
 
-  // ⏺ rekam video (canvas + filter) -> WebM
-  function toggleRecord() {
+  // ⏺ rekam video (canvas + filter + SUARA mikrofon) -> WebM
+  async function toggleRecord() {
     if (recording) { recRef.current?.stop(); return; }
     const src = liveCanvasRef.current; if (!src || !src.captureStream) return;
     try {
       const stream = src.captureStream(30);
-      const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
-      const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+      // gabungkan suara mikrofon (jika diizinkan)
+      try {
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+        micRef.current = mic;
+        mic.getAudioTracks().forEach((t) => stream.addTrack(t));
+      } catch { /* tetap rekam tanpa mic jika ditolak */ }
+      const mime = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+      const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000, audioBitsPerSecond: 128_000 });
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
-      mr.onstop = () => { download(new Blob(chunksRef.current, { type: "video/webm" }), "webm"); setRecording(false); };
+      mr.onstop = () => {
+        download(new Blob(chunksRef.current, { type: "video/webm" }), "webm");
+        micRef.current?.getTracks().forEach((t) => t.stop()); micRef.current = null;
+        setRecording(false);
+      };
       mr.start(); recRef.current = mr; setRecording(true);
     } catch { /* perangkat tak mendukung */ }
   }
-  useEffect(() => () => { const mr = recRef.current; try { if (mr && mr.state === "recording") mr.stop(); } catch { /* */ } }, []);
+  useEffect(() => () => { const mr = recRef.current; try { if (mr && mr.state === "recording") mr.stop(); } catch { /* */ } micRef.current?.getTracks().forEach((t) => t.stop()); }, []);
 
   const fltDef = filterByKey(filter);
   const filterCss = fltDef.filterCss ?? "none";
