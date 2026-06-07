@@ -43,8 +43,14 @@ import {
   SEED_WALLET_TX,
 } from "./seed";
 
+import { supabaseEnabled } from "./supabase";
+import { mirrorPost, mirrorLive, endLiveRemote } from "./sync";
+
 let counter = 0;
 const uid = (prefix: string) => `${prefix}_${Date.now().toString(36)}_${counter++}`;
+// id kompatibel backend (uuid) saat Supabase aktif, agar echo realtime ter-dedupe
+const newId = (prefix: string) =>
+  supabaseEnabled && typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : uid(prefix);
 
 export interface Settings {
   privateAccount: boolean;
@@ -335,7 +341,7 @@ export const useStore = create<State>()(
       startLive: ({ title, category, thumbnail, invited }) => {
         const s = get();
         const me = s.user(s.currentUserId);
-        const id = uid("lv");
+        const id = newId("lv");
         const live: LiveStream = {
           id, userId: s.currentUserId, title,
           thumbnail: thumbnail || me.cover || me.avatar,
@@ -343,6 +349,7 @@ export const useStore = create<State>()(
           category,
         };
         set((st) => ({ liveStreams: [live, ...st.liveStreams] }));
+        mirrorLive(live); // ke backend -> kartu live tampil di beranda semua pengguna
         // undang teman: kirim DM "aku lagi live, nonton yuk"
         for (const uidv of invited ?? []) {
           try { get().sendMessage(uidv, `🔴 Aku lagi LIVE: "${title}" — nonton yuk!`); } catch { /* */ }
@@ -350,7 +357,7 @@ export const useStore = create<State>()(
         return id;
       },
 
-      endLive: (id) => set((s) => ({ liveStreams: s.liveStreams.filter((l) => l.id !== id) })),
+      endLive: (id) => { set((s) => ({ liveStreams: s.liveStreams.filter((l) => l.id !== id) })); endLiveRemote(id); },
 
       addProduct: ({ name, price, image, description, category }) =>
         set((s) => ({
@@ -657,21 +664,12 @@ export const useStore = create<State>()(
           ),
         })),
 
-      addPost: (text, image) =>
-        set((s) => ({
-          posts: [
-            {
-              id: uid("p"),
-              userId: s.currentUserId,
-              text: text.trim(),
-              image,
-              createdAt: Date.now(),
-              likedBy: [],
-              comments: [],
-            },
-            ...s.posts,
-          ],
-        })),
+      addPost: (text, image) => {
+        const s = get();
+        const post = { id: newId("p"), userId: s.currentUserId, text: text.trim(), image, createdAt: Date.now(), likedBy: [], comments: [] };
+        set((st) => ({ posts: [post, ...st.posts] }));
+        mirrorPost(post); // ke backend (no-op bila offline) -> tampil di beranda semua pengguna
+      },
 
       drafts: [],
       saveDraft: (d) =>

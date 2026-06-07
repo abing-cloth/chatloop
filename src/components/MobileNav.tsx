@@ -1,10 +1,11 @@
-import { Clapperboard, Home, Radio, Store } from "lucide-react";
+import { Clapperboard, Home, Radio, Search, Store } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn } from "../lib/utils";
 import type { View } from "./Sidebar";
 
 const ITEMS = [
   { id: "feed", icon: Home },
+  { id: "explore", icon: Search }, // cari teman & toko
   { id: "reels", icon: Clapperboard },
   { id: "live", icon: Radio },
   { id: "shop", icon: Store },
@@ -29,7 +30,7 @@ export function MobileNav({
             key={item.id}
             onClick={() => onNavigate(item.id)}
             className={cn(
-              "relative rounded-xl p-3 transition",
+              "relative rounded-xl p-2.5 transition",
               active ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-zinc-500"
             )}
           >

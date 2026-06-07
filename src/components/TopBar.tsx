@@ -46,6 +46,14 @@ export function TopBar({
 
         {/* actions */}
         <nav className="flex items-center gap-1">
+          {/* cari teman & toko — ikon khusus HP (input cari hanya di layar lebar) */}
+          <button
+            onClick={() => onNavigate("explore")}
+            title="Cari teman & toko"
+            className={cn("rounded-full p-2.5 transition hover:bg-zinc-100 sm:hidden dark:hover:bg-zinc-800", view === "explore" ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-zinc-700 dark:text-zinc-300")}
+          >
+            <Search size={22} />
+          </button>
           <IconBtn active={view === "feed"} onClick={() => onNavigate("feed")}>
             <Home size={22} />
           </IconBtn>

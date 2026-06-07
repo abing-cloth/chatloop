@@ -25,6 +25,7 @@ import { LockScreen } from "./components/LockScreen";
 import { CartDrawer } from "./components/CartDrawer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useStore } from "./lib/store";
+import { initSync } from "./lib/sync";
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -37,6 +38,9 @@ export default function App() {
   const settings = useStore((s) => s.settings);
 
   const lockActive = settings.appLockEnabled && !!settings.pin;
+
+  // sinkronisasi backend (Supabase) — no-op bila belum dikonfigurasi
+  useEffect(() => { initSync(useStore); }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
