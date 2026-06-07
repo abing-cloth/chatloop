@@ -5,20 +5,16 @@ import { getFaceLandmarker } from "../lib/faceLandmarker";
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
 
-// daftar efek (label/icon untuk picker)
+// Efek wajah (AR) — nama gaya filter viral
 export const FACE_EFFECTS: { key: string; label: string; icon: string }[] = [
   { key: "none", label: "Tanpa", icon: "🚫" },
-  { key: "kacamata", label: "Kacamata", icon: "🕶️" },
-  { key: "topi", label: "Topi Koboy", icon: "🤠" },
-  { key: "mahkota", label: "Mahkota", icon: "👑" },
-  { key: "kucing", label: "Kucing", icon: "🐱" },
-  { key: "anjing", label: "Anjing", icon: "🐶" },
-  { key: "babi", label: "Babi", icon: "🐷" },
-  { key: "matabesar", label: "Mata Besar", icon: "👀" },
-  { key: "melotot", label: "Melotot", icon: "😳" },
-  { key: "monyong", label: "Bibir Monyong", icon: "💋" },
-  { key: "tongos", label: "Gigi Tongos", icon: "🦷" },
-  { key: "bengkak", label: "Kepala Bengkak", icon: "🎈" },
+  { key: "pinkglass", label: "Pink Glass", icon: "🩷" },
+  { key: "barbieglass", label: "Barbie Glass", icon: "⭐" },
+  { key: "bandopink", label: "Bando Pink", icon: "🎀" },
+  { key: "butterflypink", label: "Butterfly Pink", icon: "🦋" },
+  { key: "revefairycap", label: "Reve Fairy Cap", icon: "🧚" },
+  { key: "tramp", label: "Tramp", icon: "🎩" },
+  { key: "fusiinos1206", label: "Fusi Inos 1206", icon: "✨" },
 ];
 
 const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -26,13 +22,15 @@ const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
 export function LiveCamera({
   filterCss,
   whiteOverlay = 0,
+  tint = "#ffffff",
   effect,
   facing,
   onReady,
   onError,
 }: {
   filterCss: string;
-  whiteOverlay?: number; // kekuatan memutihkan KULIT (area wajah saja)
+  whiteOverlay?: number;
+  tint?: string;
   effect: string;
   facing: "user" | "environment";
   onReady?: () => void;
@@ -48,9 +46,11 @@ export function LiveCamera({
   const effRef = useRef(effect);
   const fltRef = useRef(filterCss);
   const whiteRef = useRef(whiteOverlay);
+  const tintRef = useRef(tint);
   effRef.current = effect;
   fltRef.current = filterCss;
   whiteRef.current = whiteOverlay;
+  tintRef.current = tint;
 
   useEffect(() => {
     let cancelled = false;
@@ -77,136 +77,119 @@ export function LiveCamera({
     if (!bufRef.current) bufRef.current = document.createElement("canvas");
     const buf = bufRef.current;
 
-    // ===== util =====
-    // perbesar (liquify) bagian wajah memakai piksel orang itu sendiri
     function magnify(cx: number, cy: number, r: number, factor: number) {
       if (r < 2) return;
       const dw = r * 2 * factor, dh = r * 2 * factor;
       ctx!.save();
-      ctx!.beginPath();
-      ctx!.arc(cx, cy, r * factor * 0.96, 0, Math.PI * 2);
-      ctx!.clip();
+      ctx!.beginPath(); ctx!.arc(cx, cy, r * factor * 0.96, 0, Math.PI * 2); ctx!.clip();
       ctx!.drawImage(c!, cx - r, cy - r, r * 2, r * 2, cx - dw / 2, cy - dh / 2, dw, dh);
       ctx!.restore();
     }
-    function tri(p1: XY, p2: XY, p3: XY, fill: string) {
-      ctx!.fillStyle = fill;
-      ctx!.beginPath(); ctx!.moveTo(p1.x, p1.y); ctx!.lineTo(p2.x, p2.y); ctx!.lineTo(p3.x, p3.y); ctx!.closePath(); ctx!.fill();
+    function ellipse(x: number, y: number, rx: number, ry: number, a: number, fill: string) {
+      ctx!.fillStyle = fill; ctx!.beginPath(); ctx!.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx!.fill();
+    }
+    function heartPath(cx: number, cy: number, s: number) {
+      ctx!.beginPath();
+      ctx!.moveTo(cx, cy + s * 0.35);
+      ctx!.bezierCurveTo(cx + s, cy - s * 0.5, cx + s * 0.55, cy - s, cx, cy - s * 0.35);
+      ctx!.bezierCurveTo(cx - s * 0.55, cy - s, cx - s, cy - s * 0.5, cx, cy + s * 0.35);
+      ctx!.closePath();
+    }
+    function starPath(cx: number, cy: number, r: number) {
+      ctx!.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? r : r * 0.45;
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+        i === 0 ? ctx!.moveTo(x, y) : ctx!.lineTo(x, y);
+      }
+      ctx!.closePath();
     }
 
     function drawEffect(g: Geo) {
       const k = effRef.current;
-      const { eyeMid, angle, faceW, nose, mouth, head, lEyeC, rEyeC, eyeR, mouthW } = g;
+      const { angle, faceW, nose, mouth, head, lEyeC, rEyeC, eyeR } = g;
       const rot = (fn: () => void, at: XY, a = angle) => { ctx!.save(); ctx!.translate(at.x, at.y); ctx!.rotate(a); fn(); ctx!.restore(); };
 
-      if (k === "matabesar" || k === "melotot") {
-        const f = k === "melotot" ? 1.85 : 1.55;
-        magnify(lEyeC.x, lEyeC.y, eyeR, f);
-        magnify(rEyeC.x, rEyeC.y, eyeR, f);
-        if (k === "melotot") { drawGoogly(lEyeC, eyeR * f); drawGoogly(rEyeC, eyeR * f); }
+      if (k === "pinkglass") {
+        for (const e of [lEyeC, rEyeC]) {
+          ctx!.lineWidth = eyeR * 0.18; ctx!.strokeStyle = "#ff4fa3";
+          ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, "rgba(255,90,170,0.38)");
+          ctx!.beginPath(); ctx!.ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, 0, Math.PI * 2); ctx!.stroke();
+        }
+        rot(() => { ctx!.strokeStyle = "#ff4fa3"; ctx!.lineWidth = eyeR * 0.16; ctx!.beginPath(); ctx!.moveTo(-(dist(lEyeC, rEyeC) / 2 - eyeR), 0); ctx!.lineTo(dist(lEyeC, rEyeC) / 2 - eyeR, 0); ctx!.stroke(); }, { x: (lEyeC.x + rEyeC.x) / 2, y: (lEyeC.y + rEyeC.y) / 2 });
         return;
       }
-      if (k === "monyong") { magnify(mouth.x, mouth.y, mouthW * 0.62, 1.8); return; }
-      if (k === "tongos") {
-        magnify(mouth.x, mouth.y, mouthW * 0.6, 1.4);
-        // gigi depan
-        ctx!.save(); ctx!.translate(mouth.x, mouth.y + faceW * 0.04); ctx!.rotate(angle);
-        const tw = faceW * 0.16, th = faceW * 0.22;
-        ctx!.fillStyle = "#fffdf5"; ctx!.strokeStyle = "#d9d2bf"; ctx!.lineWidth = faceW * 0.012;
-        roundRect(-tw, 0, tw * 2, th, faceW * 0.04); ctx!.fill(); ctx!.stroke();
-        ctx!.beginPath(); ctx!.moveTo(0, 0); ctx!.lineTo(0, th); ctx!.stroke();
-        ctx!.restore();
+      if (k === "barbieglass") {
+        for (const e of [lEyeC, rEyeC]) { ctx!.fillStyle = "rgba(255,105,180,0.45)"; heartPath(e.x, e.y, eyeR * 1.3); ctx!.fill(); ctx!.lineWidth = eyeR * 0.16; ctx!.strokeStyle = "#ff2e88"; ctx!.stroke(); }
         return;
       }
-      if (k === "bengkak") { magnify(nose.x, nose.y, faceW * 0.62, 1.5); return; }
-
-      if (k === "kacamata") {
-        ctx!.save(); ctx!.strokeStyle = "#0a0a0a"; ctx!.lineWidth = eyeR * 0.22; ctx!.fillStyle = "rgba(15,15,20,0.82)";
-        for (const e of [lEyeC, rEyeC]) { ctx!.beginPath(); ctx!.ellipse(e.x, e.y, eyeR * 1.15, eyeR * 0.95, angle, 0, Math.PI * 2); ctx!.fill(); ctx!.stroke(); }
-        ctx!.beginPath(); ctx!.moveTo(lEyeC.x, lEyeC.y); ctx!.lineTo(rEyeC.x, rEyeC.y); ctx!.stroke();
-        ctx!.restore(); return;
-      }
-      if (k === "topi") {
+      if (k === "bandopink") {
         rot(() => {
-          const w = faceW * 1.7;
-          ctx!.fillStyle = "#7a4a22"; // coklat
-          ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.42, w * 0.6, faceW * 0.16, 0, 0, Math.PI * 2); ctx!.fill();
-          ctx!.beginPath();
-          ctx!.moveTo(-w * 0.27, -faceW * 0.42);
-          ctx!.quadraticCurveTo(-w * 0.3, -faceW * 0.95, 0, -faceW * 1.0);
-          ctx!.quadraticCurveTo(w * 0.3, -faceW * 0.95, w * 0.27, -faceW * 0.42);
-          ctx!.closePath(); ctx!.fill();
-          ctx!.fillStyle = "#4a2c12"; ctx!.fillRect(-w * 0.27, -faceW * 0.56, w * 0.54, faceW * 0.08);
+          ctx!.strokeStyle = "#ff5fa8"; ctx!.lineWidth = faceW * 0.13; ctx!.lineCap = "round";
+          ctx!.beginPath(); ctx!.arc(0, -faceW * 0.02, faceW * 0.56, Math.PI * 1.12, Math.PI * 1.88); ctx!.stroke();
+          // pita
+          ctx!.fillStyle = "#ff4fa3";
+          const bx = faceW * 0.5, by = -faceW * 0.32;
+          ctx!.beginPath(); ctx!.moveTo(bx, by); ctx!.lineTo(bx + faceW * 0.18, by - faceW * 0.12); ctx!.lineTo(bx + faceW * 0.18, by + faceW * 0.12); ctx!.closePath(); ctx!.fill();
+          ctx!.beginPath(); ctx!.moveTo(bx, by); ctx!.lineTo(bx + faceW * 0.34, by - faceW * 0.12); ctx!.lineTo(bx + faceW * 0.34, by + faceW * 0.12); ctx!.closePath(); ctx!.fill();
+          ctx!.fillStyle = "#ff8ec5"; ctx!.beginPath(); ctx!.arc(bx + faceW * 0.17, by, faceW * 0.05, 0, Math.PI * 2); ctx!.fill();
         }, head);
         return;
       }
-      if (k === "mahkota") {
+      if (k === "butterflypink") {
         rot(() => {
-          const w = faceW * 0.9;
-          ctx!.fillStyle = "#f5c518";
-          ctx!.beginPath();
-          ctx!.moveTo(-w / 2, -faceW * 0.35); ctx!.lineTo(-w / 2, -faceW * 0.62);
-          ctx!.lineTo(-w / 4, -faceW * 0.45); ctx!.lineTo(0, -faceW * 0.72);
-          ctx!.lineTo(w / 4, -faceW * 0.45); ctx!.lineTo(w / 2, -faceW * 0.62);
-          ctx!.lineTo(w / 2, -faceW * 0.35); ctx!.closePath(); ctx!.fill();
-        }, head);
-        return;
-      }
-      if (k === "kucing") {
-        // telinga
-        rot(() => {
-          const s = faceW * 0.42;
+          const s = faceW * 0.22;
           for (const sg of [-1, 1]) {
-            tri({ x: sg * s * 0.5, y: -faceW * 0.32 }, { x: sg * s * 1.15, y: -faceW * 0.95 }, { x: sg * s * 1.25, y: -faceW * 0.3 }, "#5b5b5b");
-            tri({ x: sg * s * 0.62, y: -faceW * 0.36 }, { x: sg * s * 1.02, y: -faceW * 0.78 }, { x: sg * s * 1.08, y: -faceW * 0.34 }, "#f7a8c4");
+            ellipse(sg * s * 0.7, -faceW * 0.5, s * 0.7, s * 0.55, sg * 0.4, "rgba(255,120,190,0.85)");
+            ellipse(sg * s * 0.8, -faceW * 0.36, s * 0.5, s * 0.4, sg * -0.3, "rgba(255,170,215,0.85)");
           }
+          ctx!.fillStyle = "#d12f7e"; ctx!.fillRect(-s * 0.06, -faceW * 0.6, s * 0.12, s * 1.0);
         }, head);
-        // hidung kucing (segitiga pink)
-        tri({ x: nose.x - faceW * 0.06, y: nose.y }, { x: nose.x + faceW * 0.06, y: nose.y }, { x: nose.x, y: nose.y + faceW * 0.06 }, "#ec4899");
-        // kumis
-        ctx!.strokeStyle = "rgba(255,255,255,0.9)"; ctx!.lineWidth = faceW * 0.012;
-        for (const sg of [-1, 1]) for (const dy of [-0.03, 0.0, 0.03]) {
+        return;
+      }
+      if (k === "revefairycap") {
+        rot(() => {
+          const w = faceW * 0.85;
+          ctx!.fillStyle = "#ffd1ec";
           ctx!.beginPath();
-          ctx!.moveTo(nose.x + sg * faceW * 0.08, nose.y + faceW * dy);
-          ctx!.lineTo(nose.x + sg * faceW * 0.42, nose.y + faceW * (dy * 2 - 0.01));
-          ctx!.stroke();
+          ctx!.moveTo(-w / 2, -faceW * 0.34);
+          ctx!.lineTo(-w / 4, -faceW * 0.66); ctx!.lineTo(0, -faceW * 0.4);
+          ctx!.lineTo(w / 4, -faceW * 0.66); ctx!.lineTo(w / 2, -faceW * 0.34);
+          ctx!.closePath(); ctx!.fill();
+          ctx!.fillStyle = "#ff7ac0"; ctx!.beginPath(); ctx!.arc(0, -faceW * 0.45, faceW * 0.05, 0, Math.PI * 2); ctx!.fill();
+        }, head);
+        // kilau
+        ctx!.fillStyle = "rgba(255,255,255,0.95)";
+        for (const [dx, dy, r] of [[-0.5, -0.5, 0.05], [0.55, -0.4, 0.04], [0.3, -0.7, 0.035]] as const) {
+          starPath(nose.x + faceW * dx, nose.y + faceW * dy, faceW * r); ctx!.fill();
         }
         return;
       }
-      if (k === "anjing") {
+      if (k === "tramp") {
         rot(() => {
-          for (const sg of [-1, 1]) { ctx!.fillStyle = "#6b4423"; ctx!.beginPath(); ctx!.ellipse(sg * faceW * 0.5, -faceW * 0.1, faceW * 0.18, faceW * 0.42, sg * 0.3, 0, Math.PI * 2); ctx!.fill(); }
+          ctx!.fillStyle = "#1a1a1a";
+          ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.4, faceW * 0.55, faceW * 0.12, 0, 0, Math.PI * 2); ctx!.fill();
+          ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.5, faceW * 0.34, faceW * 0.28, 0, Math.PI, Math.PI * 2); ctx!.fill();
+          ctx!.fillRect(-faceW * 0.34, -faceW * 0.5, faceW * 0.68, faceW * 0.1);
         }, head);
-        ctx!.fillStyle = "#2b2b2b"; ctx!.beginPath(); ctx!.ellipse(nose.x, nose.y, faceW * 0.07, faceW * 0.055, 0, 0, Math.PI * 2); ctx!.fill();
-        ctx!.fillStyle = "#ef4444"; roundRect(mouth.x - faceW * 0.06, mouth.y + faceW * 0.05, faceW * 0.12, faceW * 0.14, faceW * 0.05); ctx!.fill();
+        // kumis
+        ctx!.fillStyle = "#111";
+        for (const sg of [-1, 1]) { ctx!.beginPath(); ctx!.ellipse(nose.x + sg * faceW * 0.08, nose.y + faceW * 0.12, faceW * 0.1, faceW * 0.05, sg * 0.3, 0, Math.PI * 2); ctx!.fill(); }
         return;
       }
-      if (k === "babi") {
-        rot(() => { for (const sg of [-1, 1]) tri({ x: sg * faceW * 0.35, y: -faceW * 0.32 }, { x: sg * faceW * 0.6, y: -faceW * 0.62 }, { x: sg * faceW * 0.62, y: -faceW * 0.3 }, "#f9a8d4"); }, head);
-        ctx!.fillStyle = "#f472b6"; ctx!.beginPath(); ctx!.ellipse(nose.x, nose.y, faceW * 0.12, faceW * 0.09, 0, 0, Math.PI * 2); ctx!.fill();
-        ctx!.fillStyle = "#be185d";
-        ctx!.beginPath(); ctx!.ellipse(nose.x - faceW * 0.04, nose.y, faceW * 0.02, faceW * 0.035, 0, 0, Math.PI * 2); ctx!.fill();
-        ctx!.beginPath(); ctx!.ellipse(nose.x + faceW * 0.04, nose.y, faceW * 0.02, faceW * 0.035, 0, 0, Math.PI * 2); ctx!.fill();
+      if (k === "fusiinos1206") {
+        magnify(lEyeC.x, lEyeC.y, eyeR, 1.45);
+        magnify(rEyeC.x, rEyeC.y, eyeR, 1.45);
+        magnify(mouth.x, mouth.y, faceW * 0.22, 1.25);
         return;
       }
-      void eyeMid;
     }
 
-    function drawGoogly(c2: XY, r: number) {
-      ctx!.fillStyle = "#fff"; ctx!.beginPath(); ctx!.arc(c2.x, c2.y, r * 0.5, 0, Math.PI * 2); ctx!.fill();
-      ctx!.fillStyle = "#000"; ctx!.beginPath(); ctx!.arc(c2.x, c2.y + r * 0.1, r * 0.22, 0, Math.PI * 2); ctx!.fill();
-    }
-    function roundRect(x: number, y: number, w: number, h: number, r: number) {
-      ctx!.beginPath();
-      ctx!.moveTo(x + r, y); ctx!.arcTo(x + w, y, x + w, y + h, r); ctx!.arcTo(x + w, y + h, x, y + h, r);
-      ctx!.arcTo(x, y + h, x, y, r); ctx!.arcTo(x, y, x + w, y, r); ctx!.closePath();
-    }
-
-    interface Geo { eyeMid: XY; angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; mouthW: number; cx: number; cy: number; rx: number; ry: number; }
+    interface Geo { angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; cx: number; cy: number; rx: number; ry: number; }
     function geoOf(lm: Pt[], W: number, H: number): Geo {
       const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
       const eR = P(33), eL = P(263);
-      const eyeMid = { x: (eR.x + eL.x) / 2, y: (eR.y + eL.y) / 2 };
       const angle = Math.atan2(eL.y - eR.y, eL.x - eR.x);
       const left = P(234), right = P(454), top = P(10), bottom = P(152);
       const faceW = dist(left, right) || dist(eR, eL) * 2.5;
@@ -214,15 +197,14 @@ export function LiveCamera({
       const lEyeC = { x: (P(263).x + P(362).x) / 2, y: (P(263).y + P(362).y) / 2 };
       const eyeR = Math.max(dist(P(33), P(133)), dist(P(263), P(362))) * 0.62;
       const mouth = { x: (P(13).x + P(14).x) / 2, y: (P(13).y + P(14).y) / 2 };
-      const mouthW = dist(P(61), P(291)) || faceW * 0.4;
       const head = { x: top.x, y: top.y - faceW * 0.05 };
       const cx = (left.x + right.x) / 2, cy = (top.y + bottom.y) / 2;
       const rx = (dist(left, right) / 2) * 1.12, ry = (dist(top, bottom) / 2) * 1.15;
-      return { eyeMid, angle, faceW, nose: P(1), mouth, head, lEyeC, rEyeC, eyeR, mouthW, cx, cy, rx, ry };
+      return { angle, faceW, nose: P(1), mouth, head, lEyeC, rEyeC, eyeR, cx, cy, rx, ry };
     }
 
-    // pemutih + penghalus KULIT (hanya area wajah)
-    function beautifySkin(g: Geo, W: number, H: number, strength: number) {
+    // haluskan + warnai KULIT (area wajah saja)
+    function beautifySkin(g: Geo, W: number, H: number, strength: number, color: string) {
       buf.width = W; buf.height = H;
       const bctx = buf.getContext("2d");
       if (!bctx) return;
@@ -231,8 +213,8 @@ export function LiveCamera({
       bctx.filter = "none";
       ctx!.save();
       ctx!.beginPath(); ctx!.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, Math.PI * 2); ctx!.clip();
-      ctx!.globalAlpha = 0.55; ctx!.drawImage(buf, 0, 0); ctx!.globalAlpha = 1; // haluskan
-      ctx!.fillStyle = "#fff"; ctx!.globalAlpha = Math.min(0.5, strength); ctx!.fillRect(0, 0, W, H); // putihkan kulit
+      ctx!.globalAlpha = 0.55; ctx!.drawImage(buf, 0, 0); ctx!.globalAlpha = 1;
+      ctx!.fillStyle = color; ctx!.globalAlpha = Math.min(0.55, strength); ctx!.fillRect(0, 0, W, H);
       ctx!.globalAlpha = 1;
       ctx!.restore();
     }
@@ -253,20 +235,18 @@ export function LiveCamera({
         const now = performance.now();
         if (now - lastDetect > 55) {
           lastDetect = now;
-          try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; }
-          catch { /* skip */ }
+          try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ }
         }
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
-          if (whiteRef.current > 0) beautifySkin(g, W, H, whiteRef.current);
+          if (whiteRef.current > 0) beautifySkin(g, W, H, whiteRef.current, tintRef.current);
           if (effRef.current !== "none") drawEffect(g);
         }
-        // fallback putih global jika wajah tak terdeteksi
         if (whiteRef.current > 0 && facesRef.current.length === 0) {
-          ctx.fillStyle = "#fff"; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+          ctx.fillStyle = tintRef.current; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
         }
       } else if (whiteRef.current > 0) {
-        ctx.fillStyle = "#fff"; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        ctx.fillStyle = tintRef.current; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
       }
     };
     rafRef.current = requestAnimationFrame(loop);

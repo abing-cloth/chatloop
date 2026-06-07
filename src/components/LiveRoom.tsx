@@ -16,20 +16,18 @@ const CHATTER = [
   "Ditunggu konten berikutnya 🙏", "LFG! 🚀", "Ngakak 🤣", "Auto follow 🔔",
 ];
 
-// Filter kecantikan (cerah/mulus/putih/cantik) -> memproses KULIT wajah (haluskan + putihkan),
-// bukan sekadar mencerahkan cahaya seluruh layar. Nilai `white` = kekuatan pemutih kulit.
+// Filter (nama gaya viral). `white` = kekuatan proses kulit, `tint` = warna nuansa kulit.
 const FILTERS = [
-  { key: "normal", label: "Normal", css: "none", white: 0 },
-  { key: "cerah", label: "Cerah", css: "saturate(1.08) contrast(1.02)", white: 0.14 },
-  { key: "mulus", label: "Mulus", css: "saturate(1.04)", white: 0.12 },
-  { key: "putih", label: "Putih", css: "saturate(0.9)", white: 0.3 },
-  { key: "putih2", label: "Putih+", css: "saturate(0.82)", white: 0.42 },
-  { key: "cantik", label: "Cantik", css: "saturate(1.12) sepia(0.05)", white: 0.18 },
-  { key: "vivid", label: "Vivid", css: "saturate(1.6) contrast(1.12)", white: 0 },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0 },
-  { key: "vintage", label: "Vintage", css: "sepia(0.4) contrast(0.92) brightness(1.05) saturate(1.25)", white: 0 },
-  { key: "dingin", label: "Dingin", css: "hue-rotate(-18deg) saturate(1.25) brightness(1.04)", white: 0 },
-  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.35) brightness(1.04)", white: 0 },
+  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff" },
+  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.2, tint: "#fff5f2" },
+  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.16, tint: "#ffdbe2" },
+  { key: "blueblur", label: "Blue Blur", css: "blur(1.2px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.08, tint: "#dbe8ff" },
+  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.08)", white: 0.1, tint: "#fff2dd" },
+  { key: "overexposure", label: "Over Exposure", css: "brightness(1.4) contrast(0.82) saturate(1.05)", white: 0.3, tint: "#ffffff" },
+  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.1, tint: "#fffaf5" },
+  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.05)", white: 0.16, tint: "#ffd6ea" },
+  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0" },
+  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff" },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
@@ -72,6 +70,7 @@ export function LiveRoom({
   const fltDef = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
   const filterCss = fltDef.css ?? "none";
   const whiteOverlay = fltDef.white ?? 0;
+  const tint = fltDef.tint ?? "#ffffff";
 
   useEffect(() => {
     const c = setInterval(() => {
@@ -127,7 +126,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
