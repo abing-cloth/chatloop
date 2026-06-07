@@ -251,7 +251,7 @@ export function LiveRoom({
             {/* background / scene */}
             <div className="mb-2 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <span className="shrink-0 text-[11px] text-white/80">🖼️ Latar</span>
-              {([["none", "Asli"], ["blur", "Blur"], ["hologram", "Hologram"], ["studio", "Studio"]] as const).map(([b, lbl]) => (
+              {([["none", "Asli"], ["blur", "Blur"], ["bokeh", "✨ Bokeh"], ["beach", "🏖️ Pantai"], ["sunset", "🌅 Senja"], ["nature", "🌿 Alam"], ["hologram", "Hologram"], ["studio", "Studio"]] as const).map(([b, lbl]) => (
                 <button key={b} onClick={() => setBg(b)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === b ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{lbl}</button>
               ))}
               <button onClick={() => bgFileRef.current?.click()} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === "image" ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>📷 Foto</button>

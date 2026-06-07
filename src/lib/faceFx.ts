@@ -86,6 +86,57 @@ function drawCover(ctx: CanvasRenderingContext2D, img: CanvasImageSource, iw: nu
   ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
 }
 
+// ── Latar bawaan (digambar prosedural, di-cache per ukuran biar hemat) ──
+export const SCENE_BG = ["bokeh", "beach", "sunset", "nature"] as const;
+let _scene: HTMLCanvasElement | null = null;
+let _sceneKey = "";
+// pseudo-acak deterministik (mulberry32) -> bokeh tak berkedip antar frame
+function rng(seed: number) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function vGrad(g: CanvasRenderingContext2D, W: number, H: number, stops: [number, string][]) {
+  const lg = g.createLinearGradient(0, 0, 0, H);
+  for (const [o, c] of stops) lg.addColorStop(o, c);
+  g.fillStyle = lg; g.fillRect(0, 0, W, H);
+}
+function sceneBg(mode: string, W: number, H: number): HTMLCanvasElement {
+  const key = `${mode}@${W}x${H}`;
+  if (_scene && _sceneKey === key) return _scene;
+  const cv = _scene ?? (_scene = document.createElement("canvas"));
+  cv.width = W; cv.height = H; _sceneKey = key;
+  const g = cv.getContext("2d")!; const S = Math.min(W, H);
+  if (mode === "bokeh") {
+    vGrad(g, W, H, [[0, "#241433"], [0.55, "#160d28"], [1, "#0a0613"]]);
+    const cols = ["#ff7ac0", "#ffd27a", "#7adfff", "#b58cff", "#ff9a8c"];
+    const r = rng(7);
+    for (let i = 0; i < 46; i++) {
+      const x = r() * W, y = r() * H, rad = S * (0.03 + r() * 0.1), c = cols[(r() * cols.length) | 0];
+      const rg = g.createRadialGradient(x, y, 0, x, y, rad);
+      rg.addColorStop(0, hexA(c, 0.5 + r() * 0.3)); rg.addColorStop(0.7, hexA(c, 0.12)); rg.addColorStop(1, hexA(c, 0));
+      g.fillStyle = rg; g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill();
+    }
+  } else if (mode === "beach") {
+    vGrad(g, W, H, [[0, "#aee3ff"], [0.5, "#dff4ff"], [0.62, "#5cc2e0"], [0.74, "#3ba6cf"], [0.75, "#f4e4b8"], [1, "#e8cf92"]]);
+    const sun = g.createRadialGradient(W * 0.74, H * 0.2, 0, W * 0.74, H * 0.2, S * 0.22);
+    sun.addColorStop(0, "rgba(255,250,220,0.95)"); sun.addColorStop(1, "rgba(255,250,220,0)");
+    g.fillStyle = sun; g.fillRect(0, 0, W, H);
+  } else if (mode === "sunset") {
+    vGrad(g, W, H, [[0, "#3a1c6b"], [0.35, "#b5478f"], [0.6, "#ff8a5c"], [0.8, "#ffc56b"], [1, "#ffe3a6"]]);
+    const sun = g.createRadialGradient(W * 0.5, H * 0.7, 0, W * 0.5, H * 0.7, S * 0.4);
+    sun.addColorStop(0, "rgba(255,240,200,0.85)"); sun.addColorStop(1, "rgba(255,240,200,0)");
+    g.fillStyle = sun; g.fillRect(0, 0, W, H);
+  } else if (mode === "nature") {
+    vGrad(g, W, H, [[0, "#d7f0c8"], [0.5, "#a6d68a"], [1, "#5f9e58"]]);
+    const r = rng(11);
+    g.filter = `blur(${S * 0.04}px)`;
+    for (let i = 0; i < 14; i++) {
+      const x = r() * W, y = H * (0.3 + r() * 0.7), rad = S * (0.08 + r() * 0.12);
+      g.fillStyle = hexA(r() > 0.5 ? "#6fae5c" : "#cfe8a8", 0.5);
+      g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill();
+    }
+    g.filter = "none";
+  }
+  return cv;
+}
+
 /** Ganti latar (Background): orang dipertahankan via mask, latar diganti. mode: blur/studio/hologram/image. */
 export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasImageSource, maskCanvas: HTMLCanvasElement, W: number, H: number, mode: string, buf: HTMLCanvasElement, bgImg?: CanvasImageSource | null, bgW = 0, bgH = 0) {
   const bctx = buf.getContext("2d"); if (!bctx) return;
@@ -112,6 +163,8 @@ export function applyBackground(ctx: CanvasRenderingContext2D, source: CanvasIma
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "rgba(120,220,255,0.07)";
     for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
+  } else if ((SCENE_BG as readonly string[]).includes(mode)) {
+    ctx.drawImage(sceneBg(mode, W, H), 0, 0, W, H);
   }
   // orang di atas latar
   ctx.drawImage(buf, 0, 0, W, H);
