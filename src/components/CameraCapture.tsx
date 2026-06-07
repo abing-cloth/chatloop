@@ -7,19 +7,21 @@ interface Filter {
   label: string;
   css: string;
   glow?: boolean;
-  white?: number; // lapisan putih (0-1) untuk memutihkan kulit
+  white?: number; // kekuatan lapisan warna (0-1) untuk proses kulit
+  tint?: string;  // warna lapisan (default putih)
 }
 
+// Nama filter gaya viral (selaras dengan filter Live)
 const FILTERS: Filter[] = [
-  { key: "normal", label: "Asli", css: "none" },
-  { key: "cerah", label: "Cerah", css: "brightness(1.2) contrast(1.02) saturate(1.1)" },
-  { key: "putih", label: "Putih", css: "brightness(1.35) contrast(0.84) saturate(0.82)", white: 0.2 },
-  { key: "putih2", label: "Putih+", css: "brightness(1.5) contrast(0.78) saturate(0.7)", white: 0.34 },
-  { key: "mulus", label: "Mulus", css: "brightness(1.18) saturate(1.05) contrast(1.0) blur(1.6px)", white: 0.1 },
-  { key: "cantik", label: "Cantik", css: "brightness(1.26) saturate(1.16) contrast(1.0) sepia(0.08)", glow: true, white: 0.12 },
-  { key: "glow", label: "Glow", css: "brightness(1.3) saturate(1.1) contrast(1.0) blur(0.9px)", glow: true, white: 0.1 },
-  { key: "hangat", label: "Hangat", css: "sepia(0.25) saturate(1.3) brightness(1.1)" },
-  { key: "dingin", label: "Dingin", css: "hue-rotate(-12deg) saturate(1.15) brightness(1.1)" },
+  { key: "normal", label: "Normal", css: "none" },
+  { key: "beautyfilter", label: "Beauty Filter", css: "brightness(1.12) saturate(1.08) blur(0.6px)", white: 0.18, tint: "#fff5f2" },
+  { key: "beautymouth", label: "Beauty Mouth", css: "brightness(1.1) saturate(1.18) contrast(1.02)", white: 0.16, tint: "#ffdbe2" },
+  { key: "blueblur", label: "Blue Blur", css: "blur(1.4px) hue-rotate(-12deg) saturate(1.1) brightness(1.08)", white: 0.08, tint: "#dbe8ff" },
+  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.12)", white: 0.08, tint: "#fff2dd" },
+  { key: "overexposure", label: "Over Exposure", css: "brightness(1.5) contrast(0.8) saturate(1.05)", white: 0.26 },
+  { key: "natural111", label: "Natural 111", css: "brightness(1.06) saturate(1.1) contrast(1.03)", white: 0.08 },
+  { key: "kindofcute", label: "Kind of Cute", css: "brightness(1.12) saturate(1.2)", glow: true, white: 0.14, tint: "#ffd6ea" },
+  { key: "fusiinos", label: "Fusi Wajah Inos", css: "brightness(1.16) saturate(1.12) blur(0.9px)", glow: true, white: 0.2, tint: "#fff4f0" },
   { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1) brightness(1.05)" },
 ];
 
@@ -34,7 +36,7 @@ export function CameraCapture({
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [facing, setFacing] = useState<"user" | "environment">("user");
-  const [filter, setFilter] = useState("cerah");
+  const [filter, setFilter] = useState("beautyfilter");
   const [bright, setBright] = useState(1);
   const [shot, setShot] = useState<string | null>(null); // hasil capture (sebelum dipakai)
   const [galleryImg, setGalleryImg] = useState<string | null>(null); // foto galeri untuk difilter
@@ -89,7 +91,7 @@ export function CameraCapture({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.filter = "none";
     if (flt.glow) drawGlow(ctx, w, h);
-    if (flt.white) { ctx.fillStyle = `rgba(255,255,255,${flt.white})`; ctx.fillRect(0, 0, w, h); }
+    if (flt.white) { ctx.globalAlpha = flt.white; ctx.fillStyle = flt.tint ?? "#ffffff"; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
     setShot(canvas.toDataURL("image/jpeg", 0.9));
   }
 
@@ -105,7 +107,7 @@ export function CameraCapture({
       ctx.drawImage(img, 0, 0);
       ctx.filter = "none";
       if (flt.glow) drawGlow(ctx, canvas.width, canvas.height);
-      if (flt.white) { ctx.fillStyle = `rgba(255,255,255,${flt.white})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      if (flt.white) { ctx.globalAlpha = flt.white; ctx.fillStyle = flt.tint ?? "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
       setShot(canvas.toDataURL("image/jpeg", 0.92));
     };
     img.src = src;
@@ -143,9 +145,9 @@ export function CameraCapture({
             style={{ filter: cssStr, transform: facing === "user" ? "scaleX(-1)" : "none" }}
           />
         )}
-        {/* lapisan putih untuk filter memutihkan */}
+        {/* lapisan warna untuk filter memproses kulit */}
         {!shot && flt.white ? (
-          <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: flt.white }} />
+          <div className="pointer-events-none absolute inset-0" style={{ opacity: flt.white, backgroundColor: flt.tint ?? "#ffffff" }} />
         ) : null}
 
         <button onClick={onClose} className="absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
