@@ -1,61 +1,69 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Check, ImagePlus, RefreshCw, RotateCcw, SwitchCamera, X } from "lucide-react";
 import { cn, fileToDataUrl } from "../lib/utils";
+import { getFaceLandmarker } from "../lib/faceLandmarker";
+import { renderBeauty, type BeautyFx } from "../lib/faceFx";
+import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 
-interface Filter {
-  key: string;
-  label: string;
-  css: string;
-  glow?: boolean;
-  white?: number; // kekuatan lapisan warna (0-1) untuk proses kulit
-  tint?: string;  // warna lapisan (default putih)
-}
+interface Filter extends BeautyFx { key: string; label: string; }
 
-// Nama filter gaya viral (selaras dengan filter Live)
+// Nama filter gaya viral + ubah fisik (mata/bibir/pipi/alis/hidung), selaras dgn Live
 const FILTERS: Filter[] = [
-  { key: "normal", label: "Normal", css: "none" },
-  { key: "beautyfilter", label: "Beauty Filter", css: "brightness(1.12) saturate(1.08) blur(0.6px)", white: 0.18, tint: "#fff5f2" },
-  { key: "beautymouth", label: "Beauty Mouth", css: "brightness(1.1) saturate(1.18) contrast(1.02)", white: 0.16, tint: "#ffdbe2" },
-  { key: "blueblur", label: "Blue Blur", css: "blur(1.4px) hue-rotate(-12deg) saturate(1.1) brightness(1.08)", white: 0.08, tint: "#dbe8ff" },
-  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.12)", white: 0.08, tint: "#fff2dd" },
-  { key: "overexposure", label: "Over Exposure", css: "brightness(1.5) contrast(0.8) saturate(1.05)", white: 0.26 },
-  { key: "natural111", label: "Natural 111", css: "brightness(1.06) saturate(1.1) contrast(1.03)", white: 0.08 },
-  { key: "kindofcute", label: "Kind of Cute", css: "brightness(1.12) saturate(1.2)", glow: true, white: 0.14, tint: "#ffd6ea" },
-  { key: "fusiinos", label: "Fusi Wajah Inos", css: "brightness(1.16) saturate(1.12) blur(0.9px)", glow: true, white: 0.2, tint: "#fff4f0" },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1) brightness(1.05)" },
+  { key: "normal", label: "Normal", filterCss: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
+  { key: "beautyfilter", label: "Beauty Filter", filterCss: "saturate(1.08)", white: 0.2, tint: "#fff5f2", eye: 1.18, lip: 1.08, cheek: 0.94, nose: 0.9, brow: 1.06 },
+  { key: "beautymouth", label: "Beauty Mouth", filterCss: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.1, lip: 1.3, cheek: 0.95, nose: 0.92, brow: 1.04 },
+  { key: "blueblur", label: "Blue Blur", filterCss: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.12, lip: 1.06, cheek: 0.96, nose: 0.94 },
+  { key: "dontworry", label: "Don't Worry", filterCss: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.1, lip: 1.06, cheek: 0.97 },
+  { key: "overexposure", label: "Over Exposure", filterCss: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.3, tint: "#ffffff", eye: 1.1, lip: 1.05 },
+  { key: "natural111", label: "Natural 111", filterCss: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.08, lip: 1.04, cheek: 0.97, nose: 0.95 },
+  { key: "kindofcute", label: "Kind of Cute", filterCss: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.32, lip: 1.12, cheek: 0.9, nose: 0.88, brow: 1.08 },
+  { key: "fusiinos", label: "Fusi Wajah Inos", filterCss: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0", eye: 1.28, lip: 1.18, cheek: 0.9, nose: 0.88, brow: 1.06 },
+  { key: "bw", label: "B&W", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
 ];
 
 export function CameraCapture({
-  onCapture,
-  onClose,
+  onCapture, onClose,
 }: {
   onCapture: (dataUrl: string) => void;
   onClose: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const bufRef = useRef<HTMLCanvasElement | null>(null);
+  const fbufRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const lmRef = useRef<FaceLandmarker | null>(null);
+  const facesRef = useRef<any[]>([]);
+  const rafRef = useRef(0);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [filter, setFilter] = useState("beautyfilter");
   const [bright, setBright] = useState(1);
-  const [shot, setShot] = useState<string | null>(null); // hasil capture (sebelum dipakai)
-  const [galleryImg, setGalleryImg] = useState<string | null>(null); // foto galeri untuk difilter
+  const [shot, setShot] = useState<string | null>(null);
+  const [galleryImg, setGalleryImg] = useState<string | null>(null);
   const [camError, setCamError] = useState(false);
 
   const flt = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
-  const cssStr = (((flt.css === "none" ? "" : flt.css) + (bright !== 1 ? ` brightness(${bright})` : "")).trim()) || "none";
+  const filterRef = useRef(flt); filterRef.current = flt;
+  const brightRef = useRef(bright); brightRef.current = bright;
+  const galleryRef = useRef<string | null>(galleryImg); galleryRef.current = galleryImg;
+  const shotRef = useRef<string | null>(shot); shotRef.current = shot;
+  const facingRef = useRef(facing); facingRef.current = facing;
 
-  // mulai/ganti kamera
+  // model wajah
+  useEffect(() => { getFaceLandmarker().then((lm) => { lmRef.current = lm; }); }, []);
+
+  // kamera
   useEffect(() => {
     if (shot || galleryImg) return;
     let cancelled = false;
     streamRef.current?.getTracks().forEach((t) => t.stop());
-    navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: facing }, audio: false })
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: facing }, audio: false })
       .then((s) => {
         if (cancelled) { s.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = s;
-        if (videoRef.current) videoRef.current.srcObject = s;
+        if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play().catch(() => {}); }
         setCamError(false);
       })
       .catch(() => setCamError(true));
@@ -64,54 +72,58 @@ export function CameraCapture({
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
 
-  function drawGlow(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    ctx.save();
-    ctx.globalCompositeOperation = "soft-light";
-    const g = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.1, w / 2, h / 2, h * 0.7);
-    g.addColorStop(0, "rgba(255,225,210,0.55)");
-    g.addColorStop(1, "rgba(255,200,220,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-    ctx.restore();
-  }
-
-  function capture() {
-    const v = videoRef.current;
-    if (!v) return;
-    const w = v.videoWidth || 720;
-    const h = v.videoHeight || 1280;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.filter = cssStr;
-    if (facing === "user") { ctx.translate(w, 0); ctx.scale(-1, 1); } // cermin selfie
-    ctx.drawImage(v, 0, 0, w, h);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.filter = "none";
-    if (flt.glow) drawGlow(ctx, w, h);
-    if (flt.white) { ctx.globalAlpha = flt.white; ctx.fillStyle = flt.tint ?? "#ffffff"; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
-    setShot(canvas.toDataURL("image/jpeg", 0.9));
-  }
-
-  function applyToImage(src: string) {
+  // muat gambar galeri
+  useEffect(() => {
+    if (!galleryImg) { imgRef.current = null; return; }
     const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.filter = cssStr;
-      ctx.drawImage(img, 0, 0);
-      ctx.filter = "none";
-      if (flt.glow) drawGlow(ctx, canvas.width, canvas.height);
-      if (flt.white) { ctx.globalAlpha = flt.white; ctx.fillStyle = flt.tint ?? "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
-      setShot(canvas.toDataURL("image/jpeg", 0.92));
+    img.onload = () => { imgRef.current = img; };
+    img.src = galleryImg;
+  }, [galleryImg]);
+
+  // loop render kanvas (preview = hasil)
+  useEffect(() => {
+    if (!bufRef.current) bufRef.current = document.createElement("canvas");
+    if (!fbufRef.current) fbufRef.current = document.createElement("canvas");
+    let lastDetect = 0;
+    const loop = () => {
+      rafRef.current = requestAnimationFrame(loop);
+      if (shotRef.current) return;
+      const c = canvasRef.current; if (!c) return;
+      const ctx = c.getContext("2d"); if (!ctx) return;
+      const gal = galleryRef.current;
+      const img = imgRef.current, v = videoRef.current;
+      const useImg = !!gal && !!img && img.complete && img.naturalWidth > 0;
+      const source: CanvasImageSource | null = useImg ? img : (v && v.videoWidth ? v : null);
+      if (!source) return;
+      const W = useImg ? img!.naturalWidth : v!.videoWidth;
+      const H = useImg ? img!.naturalHeight : v!.videoHeight;
+      if (c.width !== W) { c.width = W; c.height = H; }
+      const f = filterRef.current;
+      const css = ((f.filterCss === "none" ? "" : f.filterCss) + (brightRef.current !== 1 ? ` brightness(${brightRef.current})` : "")).trim() || "none";
+      // deteksi wajah
+      const lm = lmRef.current;
+      if (lm) {
+        const now = performance.now();
+        if (now - lastDetect > 55) { lastDetect = now; try { facesRef.current = (lm.detectForVideo(source as HTMLVideoElement, now).faceLandmarks ?? []) as any[]; } catch { /* */ } }
+      }
+      renderBeauty(ctx, c, source, W, H, facesRef.current, { ...f, filterCss: css }, bufRef.current!, fbufRef.current!);
     };
-    img.src = src;
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  function snapshot(): string | null {
+    const c = canvasRef.current; if (!c || !c.width) return null;
+    const mirror = !galleryImg && facing === "user";
+    const out = document.createElement("canvas");
+    out.width = c.width; out.height = c.height;
+    const octx = out.getContext("2d"); if (!octx) return null;
+    if (mirror) { octx.translate(out.width, 0); octx.scale(-1, 1); }
+    octx.drawImage(c, 0, 0);
+    return out.toDataURL("image/jpeg", 0.92);
   }
+
+  function capture() { const d = snapshot(); if (d) setShot(d); }
 
   async function pickGallery(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -123,44 +135,37 @@ export function CameraCapture({
     e.target.value = "";
   }
 
+  const isCam = !shot && !galleryImg;
+
   return (
     <div className="fixed inset-0 z-[96] flex flex-col bg-black">
-      {/* preview area */}
       <div className="relative flex-1 overflow-hidden">
+        <video ref={videoRef} autoPlay playsInline muted className="hidden" />
         {shot ? (
           <img src={shot} alt="hasil" className="h-full w-full object-contain" />
-        ) : galleryImg ? (
-          <img src={galleryImg} alt="galeri" className="h-full w-full object-contain" style={{ filter: cssStr }} />
-        ) : camError ? (
+        ) : camError && !galleryImg ? (
           <div className="grid h-full w-full place-items-center px-8 text-center text-white/70">
-            Kamera tidak bisa diakses. Coba ambil dari galeri di bawah, atau izinkan kamera.
+            Kamera tidak bisa diakses. Ambil dari galeri di bawah, atau izinkan kamera.
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="h-full w-full object-cover"
-            style={{ filter: cssStr, transform: facing === "user" ? "scaleX(-1)" : "none" }}
+          <canvas
+            ref={canvasRef}
+            className={cn("h-full w-full", galleryImg ? "object-contain" : "object-cover")}
+            style={{ transform: !galleryImg && facing === "user" ? "scaleX(-1)" : "none" }}
           />
         )}
-        {/* lapisan warna untuk filter memproses kulit */}
-        {!shot && flt.white ? (
-          <div className="pointer-events-none absolute inset-0" style={{ opacity: flt.white, backgroundColor: flt.tint ?? "#ffffff" }} />
-        ) : null}
 
         <button onClick={onClose} className="absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
           <X size={20} />
         </button>
-        {!shot && !galleryImg && !camError && (
+        {isCam && !camError && (
           <button onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))} title="Ganti kamera" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
             <SwitchCamera size={20} />
           </button>
         )}
       </div>
 
-      {/* slider terang (edit) */}
+      {/* slider terang */}
       {!shot && (
         <div className="flex items-center gap-3 bg-black px-4 pt-2 text-white">
           <span className="text-xs">☀️ Terang</span>
@@ -173,14 +178,8 @@ export function CameraCapture({
       {!shot && (
         <div className="flex gap-2 overflow-x-auto bg-black px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                filter === f.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30"
-              )}
-            >
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition", filter === f.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>
               {f.label}
             </button>
           ))}
@@ -210,7 +209,7 @@ export function CameraCapture({
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickGallery} />
 
             {galleryImg ? (
-              <button onClick={() => applyToImage(galleryImg)} className="flex flex-col items-center gap-1 text-white">
+              <button onClick={capture} className="flex flex-col items-center gap-1 text-white">
                 <span className="grid h-16 w-16 place-items-center rounded-full border-4 border-white bg-fuchsia-600"><Check size={28} /></span>
                 <span className="text-xs">Terapkan filter</span>
               </button>
