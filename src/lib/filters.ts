@@ -8,7 +8,7 @@ export interface FilterDef extends BeautyFx {
   category: string;  // salah satu FILTER_CATEGORIES
 }
 
-export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro"] as const;
+export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro", "Seni"] as const;
 
 /*
   ┌─ TEMPLATE FILTER (salin & ubah) ───────────────────────────────┐
@@ -63,6 +63,13 @@ export const FILTERS: FilterDef[] = [
   { key: "vintage", label: "Vintage", category: "Retro", filterCss: "sepia(0.4) contrast(0.92) brightness(1.05) saturate(1.25)", white: 0.06, tint: "#fff", eye: 1, lip: 1, glow: 0.1, vignette: 0.18 },
   { key: "film90", label: "Film 90s", category: "Retro", filterCss: "sepia(0.2) contrast(1.05) saturate(1.2) brightness(1.02)", white: 0.08, tint: "#fff", eye: 1, lip: 1, glow: 0.12, vignette: 0.2 },
   { key: "bw", label: "B&W", category: "Retro", filterCss: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1, vignette: 0.16 },
+
+  // ── Seni (Animation/Character — pendekatan stilisasi CSS, bukan style-transfer ML) ──
+  { key: "kartun", label: "Kartun", category: "Seni", filterCss: "saturate(1.9) contrast(1.45) brightness(1.05)", white: 0.14, tint: "#fff6f0", body: 0.12, eye: 1.16, lip: 1.08, cheek: 0.95, glow: 0.16,
+    makeup: { lip: "#ff5d7a", lipA: 0.36, blush: "#ff9ab0", blushA: 0.2 } },
+  { key: "popart", label: "Pop Art", category: "Seni", filterCss: "saturate(2.4) contrast(1.6) hue-rotate(-6deg) brightness(1.04)", white: 0.1, tint: "#ffffff", eye: 1.12, lip: 1.06, glow: 0.2, vignette: 0.1 },
+  { key: "anime", label: "Anime", category: "Seni", filterCss: "saturate(1.7) contrast(1.3) brightness(1.08)", white: 0.18, tint: "#fff2f6", body: 0.12, eye: 1.22, lip: 1.06, cheek: 0.93, nose: 0.9, glow: 0.24, vignette: 0.06,
+    makeup: { lip: "#ff6f95", lipA: 0.34, blush: "#ff8fc0", blushA: 0.24, shadow: "#ffc0dd", shadowA: 0.2, liner: true } },
 ];
 
 export const filterByKey = (key: string) => FILTERS.find((f) => f.key === key) ?? FILTERS[0];

@@ -9,19 +9,38 @@ export type GenderMode = "auto" | "cewek" | "cowok";
 type Pt = { x: number; y: number; z: number };
 type XY = { x: number; y: number };
 
-// Efek wajah (AR) — nama gaya filter viral
-export const FACE_EFFECTS: { key: string; label: string; icon: string }[] = [
-  { key: "none", label: "Tanpa", icon: "🚫" },
-  { key: "pinkglass", label: "Pink Glass", icon: "🩷" },
-  { key: "barbieglass", label: "Barbie Glass", icon: "⭐" },
-  { key: "bandopink", label: "Bando Pink", icon: "🎀" },
-  { key: "butterflypink", label: "Butterfly Pink", icon: "🦋" },
-  { key: "revefairycap", label: "Reve Fairy Cap", icon: "🧚" },
-  { key: "tramp", label: "Tramp", icon: "🎩" },
-  { key: "fusiinos1206", label: "Fusi Inos 1206", icon: "✨" },
-  { key: "matagede", label: "Mata Gede", icon: "👁️" },
-  { key: "balon", label: "Kepala Balon", icon: "🎈" },
+// Efek wajah (AR) — dikelompokkan sesuai kategori Effect House
+export const FACE_EFFECTS: { key: string; label: string; icon: string; group: string }[] = [
+  { key: "none", label: "Tanpa", icon: "🚫", group: "" },
+  // 3D Object / Topeng (kategori 5)
+  { key: "pinkglass", label: "Pink Glass", icon: "🩷", group: "Topeng/3D" },
+  { key: "barbieglass", label: "Barbie Glass", icon: "⭐", group: "Topeng/3D" },
+  { key: "bandopink", label: "Bando Pink", icon: "🎀", group: "Topeng/3D" },
+  { key: "butterflypink", label: "Butterfly Pink", icon: "🦋", group: "Topeng/3D" },
+  { key: "revefairycap", label: "Reve Fairy Cap", icon: "🧚", group: "Topeng/3D" },
+  { key: "tramp", label: "Tramp", icon: "🎩", group: "Topeng/3D" },
+  // Distortion / Lucu (kategori 7)
+  { key: "fusiinos1206", label: "Fusi Inos 1206", icon: "✨", group: "Distorsi" },
+  { key: "matagede", label: "Mata Gede", icon: "👁️", group: "Distorsi" },
+  { key: "balon", label: "Kepala Balon", icon: "🎈", group: "Distorsi" },
+  // Particle / Efek (kategori 8)
+  { key: "glitter", label: "Glitter", icon: "🌟", group: "Particle" },
+  { key: "bunga", label: "Bunga Jatuh", icon: "🌸", group: "Particle" },
+  { key: "salju", label: "Salju", icon: "❄️", group: "Particle" },
+  { key: "hati", label: "Hati Terbang", icon: "💖", group: "Particle" },
+  // Aksesori Fashion (kategori 12)
+  { key: "anting", label: "Anting", icon: "💎", group: "Aksesori" },
+  { key: "kalung", label: "Kalung", icon: "📿", group: "Aksesori" },
 ];
+
+// Particle: set emoji per jenis (kategori 8). hati = naik dari bawah, lainnya jatuh.
+const PARTICLE: Record<string, string[]> = {
+  glitter: ["✨", "🌟", "⭐"],
+  bunga: ["🌸", "🌺", "💮"],
+  salju: ["❄️", "🌨️"],
+  hati: ["💖", "💗", "❤️"],
+};
+type Particle = { x: number; y: number; vx: number; vy: number; rot: number; spin: number; fz: number; g: string };
 
 const dist = (a: XY, b: XY) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -107,6 +126,7 @@ export function LiveCamera({
   const intenRef = useRef(intensity);
   const bgRef = useRef(background);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const particlesRef = useRef<Particle[]>([]);
   effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
   tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale; bodyRef.current = bodyStrength; makeupRef.current = makeup;
   glowRef.current = glow; vigRef.current = vignette; cheekRef.current = cheek; noseRef.current = nose; genderModeRef.current = genderMode; intenRef.current = intensity; bgRef.current = background;
@@ -242,9 +262,60 @@ export function LiveCamera({
       if (k === "fusiinos1206") { magnify(lEyeC.x, lEyeC.y, eyeR, 1.5); magnify(rEyeC.x, rEyeC.y, eyeR, 1.5); magnify(mouth.x, mouth.y, faceW * 0.22, 1.3); return; }
       if (k === "matagede") { magnify(lEyeC.x, lEyeC.y, eyeR, 1.85); magnify(rEyeC.x, rEyeC.y, eyeR, 1.85); return; }
       if (k === "balon") { magnify(nose.x, nose.y, faceW * 0.62, 1.5); return; }
+      // Aksesori Fashion (kategori 12): anting di telinga (234/454), kalung di bawah dagu (152)
+      if (k === "anting") {
+        for (const e of [g.earR, g.earL]) {
+          const x = e.x, y = e.y + faceW * 0.04, gy = y + faceW * 0.15;
+          ctx!.strokeStyle = "#ffd86b"; ctx!.lineWidth = faceW * 0.012;
+          ctx!.beginPath(); ctx!.moveTo(x, y); ctx!.lineTo(x, gy - faceW * 0.05); ctx!.stroke();
+          const grd = ctx!.createRadialGradient(x - faceW * 0.012, gy - faceW * 0.012, 0, x, gy, faceW * 0.055);
+          grd.addColorStop(0, "#ffffff"); grd.addColorStop(0.4, "#7fe9ff"); grd.addColorStop(1, "#1aa0d0");
+          ctx!.fillStyle = grd; ctx!.beginPath(); ctx!.arc(x, gy, faceW * 0.05, 0, Math.PI * 2); ctx!.fill();
+          ctx!.strokeStyle = "rgba(255,255,255,0.85)"; ctx!.lineWidth = faceW * 0.006; ctx!.stroke();
+        }
+        return;
+      }
+      if (k === "kalung") {
+        const cx2 = g.chin.x, cy2 = g.chin.y + faceW * 0.18;
+        ctx!.strokeStyle = "#ffd86b"; ctx!.lineWidth = faceW * 0.022; ctx!.lineCap = "round";
+        ctx!.beginPath(); ctx!.arc(cx2, cy2 - faceW * 0.16, faceW * 0.46, Math.PI * 0.22, Math.PI * 0.78); ctx!.stroke();
+        const py = cy2 + faceW * 0.16;
+        const grd = ctx!.createRadialGradient(cx2, py - faceW * 0.03, 0, cx2, py, faceW * 0.1);
+        grd.addColorStop(0, "#ffffff"); grd.addColorStop(0.4, "#ff9ed6"); grd.addColorStop(1, "#d0247f");
+        ctx!.fillStyle = grd; heartPath(cx2, py, faceW * 0.1); ctx!.fill();
+        return;
+      }
     }
 
-    interface Geo { angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; cx: number; cy: number; rx: number; ry: number; }
+    // Particle layer (kategori 8): jatuh/terbang, di-update tiap frame.
+    function stepParticles(W: number, H: number, spawn: boolean) {
+      const set = PARTICLE[effRef.current];
+      const ps = particlesRef.current;
+      if (!set) { if (ps.length) particlesRef.current = []; return; }
+      const rise = effRef.current === "hati", snow = effRef.current === "salju";
+      if (spawn && ps.length < 70) {
+        for (let i = 0; i < 2; i++) {
+          ps.push({
+            x: Math.random() * W, y: rise ? H + 24 : -24,
+            vx: (Math.random() - 0.5) * (snow ? 0.6 : 1.2) * W * 0.004,
+            vy: (rise ? -1 : 1) * (0.4 + Math.random() * 0.8) * H * 0.006,
+            rot: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.12,
+            fz: W * (0.035 + Math.random() * 0.03), g: set[(Math.random() * set.length) | 0],
+          });
+        }
+      }
+      ctx!.save(); ctx!.textAlign = "center"; ctx!.textBaseline = "middle";
+      for (let i = ps.length - 1; i >= 0; i--) {
+        const p = ps[i]; p.x += p.vx; p.y += p.vy; p.rot += p.spin;
+        if (!snow) p.vy += H * 0.00018; // gravitasi (salju melayang)
+        if (p.y > H + 48 || p.y < -48) { ps.splice(i, 1); continue; }
+        ctx!.save(); ctx!.translate(p.x, p.y); ctx!.rotate(p.rot);
+        ctx!.font = `${p.fz}px serif`; ctx!.fillText(p.g, 0, 0); ctx!.restore();
+      }
+      ctx!.restore();
+    }
+
+    interface Geo { angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; earR: XY; earL: XY; chin: XY; cx: number; cy: number; rx: number; ry: number; }
     function geoOf(lm: Pt[], W: number, H: number): Geo {
       const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
       const eR = P(33), eL = P(263);
@@ -258,7 +329,7 @@ export function LiveCamera({
       const head = { x: top.x, y: top.y - faceW * 0.05 };
       const cx = (left.x + right.x) / 2, cy = (top.y + bottom.y) / 2;
       const rx = (dist(left, right) / 2) * 1.1, ry = (dist(top, bottom) / 2) * 1.15;
-      return { angle, faceW, nose: P(1), mouth, head, lEyeC, rEyeC, eyeR, cx, cy, rx, ry };
+      return { angle, faceW, nose: P(1), mouth, head, lEyeC, rEyeC, eyeR, earR: left, earL: right, chin: bottom, cx, cy, rx, ry };
     }
 
     let lastDetect = 0;
@@ -337,6 +408,7 @@ export function LiveCamera({
         if (effRef.current !== "none") for (const face of facesRef.current) drawEffect(geoOf(face, W, H));
       }
       if (effGlow > 0 || vigRef.current > 0) applyGlow(ctx, c, W, H, bufRef.current!, effGlow, vigRef.current);
+      stepParticles(W, H, fresh); // particle di lapisan paling atas
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);

@@ -274,11 +274,17 @@ export function LiveRoom({
                 ? FILTERS.filter((f) => f.category === cat).map((f) => (
                     <button key={f.key} onClick={() => setFilter(f.key)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", filter === f.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>{f.label}</button>
                   ))
-                : FACE_EFFECTS.map((a) => (
-                    <button key={a.key} onClick={() => setAr(a.key)} className={cn("flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", ar === a.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>
-                      <span className="text-base">{a.icon}</span>{a.label}
-                    </button>
-                  ))}
+                : FACE_EFFECTS.map((a, i) => {
+                    const newGroup = a.group && a.group !== FACE_EFFECTS[i - 1]?.group;
+                    return (
+                      <span key={a.key} className="flex shrink-0 items-center gap-2">
+                        {newGroup && <span className="shrink-0 pl-1 text-[10px] font-bold uppercase tracking-wide text-white/50">{a.group}</span>}
+                        <button onClick={() => setAr(a.key)} className={cn("flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition", ar === a.key ? "bg-white text-zinc-900" : "bg-white/20 text-white hover:bg-white/30")}>
+                          <span className="text-base">{a.icon}</span>{a.label}
+                        </button>
+                      </span>
+                    );
+                  })}
             </div>
           </div>
         )}
