@@ -23,14 +23,18 @@ export function LiveCamera({
   filterCss,
   whiteOverlay = 0,
   tint = "#ffffff",
+  eyeScale = 1,
+  lipScale = 1,
   effect,
   facing,
   onReady,
   onError,
 }: {
   filterCss: string;
-  whiteOverlay?: number;
+  whiteOverlay?: number; // kekuatan proses kulit (haluskan+cerahkan+tint)
   tint?: string;
+  eyeScale?: number; // perbesar mata (ubah fisik)
+  lipScale?: number; // berisi bibir (ubah fisik)
   effect: string;
   facing: "user" | "environment";
   onReady?: () => void;
@@ -39,6 +43,7 @@ export function LiveCamera({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bufRef = useRef<HTMLCanvasElement | null>(null);
+  const fbufRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lmRef = useRef<FaceLandmarker | null>(null);
   const facesRef = useRef<Pt[][]>([]);
@@ -47,10 +52,10 @@ export function LiveCamera({
   const fltRef = useRef(filterCss);
   const whiteRef = useRef(whiteOverlay);
   const tintRef = useRef(tint);
-  effRef.current = effect;
-  fltRef.current = filterCss;
-  whiteRef.current = whiteOverlay;
-  tintRef.current = tint;
+  const eyeRef = useRef(eyeScale);
+  const lipRef = useRef(lipScale);
+  effRef.current = effect; fltRef.current = filterCss; whiteRef.current = whiteOverlay;
+  tintRef.current = tint; eyeRef.current = eyeScale; lipRef.current = lipScale;
 
   useEffect(() => {
     let cancelled = false;
@@ -75,36 +80,60 @@ export function LiveCamera({
     const ctx = c.getContext("2d");
     if (!ctx) return;
     if (!bufRef.current) bufRef.current = document.createElement("canvas");
-    const buf = bufRef.current;
+    if (!fbufRef.current) fbufRef.current = document.createElement("canvas");
+    const buf = bufRef.current, fbuf = fbufRef.current;
 
+    // perbesar bagian wajah (liquify) pakai piksel orang itu sendiri -> ubah fisik
     function magnify(cx: number, cy: number, r: number, factor: number) {
-      if (r < 2) return;
-      const dw = r * 2 * factor, dh = r * 2 * factor;
+      if (r < 2 || factor <= 1.001) return;
+      const dw = r * 2 * factor;
       ctx!.save();
-      ctx!.beginPath(); ctx!.arc(cx, cy, r * factor * 0.96, 0, Math.PI * 2); ctx!.clip();
-      ctx!.drawImage(c!, cx - r, cy - r, r * 2, r * 2, cx - dw / 2, cy - dh / 2, dw, dh);
+      ctx!.beginPath(); ctx!.arc(cx, cy, r * factor * 0.95, 0, Math.PI * 2); ctx!.clip();
+      ctx!.drawImage(c!, cx - r, cy - r, r * 2, r * 2, cx - dw / 2, cy - dw / 2, dw, dw);
       ctx!.restore();
     }
-    function ellipse(x: number, y: number, rx: number, ry: number, a: number, fill: string) {
-      ctx!.fillStyle = fill; ctx!.beginPath(); ctx!.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx!.fill();
+
+    // proses KULIT: haluskan + cerahkan + tint, di-blend HALUS (feather) -> tanpa bulatan
+    function blendSkin(g: Geo, W: number, H: number, strength: number, color: string) {
+      const bctx = buf.getContext("2d"); if (!bctx) return;
+      buf.width = W; buf.height = H;
+      bctx.filter = `blur(${Math.max(3, W * 0.008)}px) brightness(${(1 + 0.3 * strength).toFixed(3)}) saturate(1.05) contrast(0.97)`;
+      bctx.drawImage(v!, 0, 0, W, H);
+      bctx.filter = "none";
+
+      const pad = 1.18, fw = Math.max(8, g.rx * 2 * pad), fh = Math.max(8, g.ry * 2 * pad);
+      const x0 = g.cx - fw / 2, y0 = g.cy - fh / 2;
+      fbuf.width = Math.round(fw); fbuf.height = Math.round(fh);
+      const fctx = fbuf.getContext("2d"); if (!fctx) return;
+      fctx.clearRect(0, 0, fbuf.width, fbuf.height);
+      fctx.drawImage(buf, x0, y0, fw, fh, 0, 0, fbuf.width, fbuf.height); // kulit halus+cerah
+      // tint warna kulit (lembut)
+      fctx.globalAlpha = color.toLowerCase() === "#ffffff" ? Math.min(0.3, strength * 0.55) : 0.4;
+      fctx.fillStyle = color; fctx.fillRect(0, 0, fbuf.width, fbuf.height);
+      fctx.globalAlpha = 1;
+      // mask feather elips -> tepi memudar (tidak ada lingkaran keras)
+      fctx.globalCompositeOperation = "destination-in";
+      const cx2 = fbuf.width / 2, cy2 = fbuf.height / 2, rr = Math.min(cx2, cy2);
+      const grd = fctx.createRadialGradient(cx2, cy2, rr * 0.1, cx2, cy2, rr);
+      grd.addColorStop(0, "rgba(0,0,0,1)"); grd.addColorStop(0.6, "rgba(0,0,0,1)"); grd.addColorStop(1, "rgba(0,0,0,0)");
+      fctx.save(); fctx.translate(cx2, cy2); fctx.scale(1, fbuf.height / fbuf.width); fctx.translate(-cx2, -cy2);
+      fctx.fillStyle = grd; fctx.fillRect(0, 0, fbuf.width, fbuf.height); fctx.restore();
+      fctx.globalCompositeOperation = "source-over";
+      // tempel ke wajah
+      ctx!.globalAlpha = Math.min(0.92, 0.62 + 0.38 * strength);
+      ctx!.drawImage(fbuf, x0, y0, fw, fh);
+      ctx!.globalAlpha = 1;
     }
-    function heartPath(cx: number, cy: number, s: number) {
-      ctx!.beginPath();
-      ctx!.moveTo(cx, cy + s * 0.35);
-      ctx!.bezierCurveTo(cx + s, cy - s * 0.5, cx + s * 0.55, cy - s, cx, cy - s * 0.35);
-      ctx!.bezierCurveTo(cx - s * 0.55, cy - s, cx - s, cy - s * 0.5, cx, cy + s * 0.35);
-      ctx!.closePath();
+
+    // ubah fisik: mata besar + bibir berisi
+    function reshape(g: Geo) {
+      if (eyeRef.current > 1) { magnify(g.lEyeC.x, g.lEyeC.y, g.eyeR, eyeRef.current); magnify(g.rEyeC.x, g.rEyeC.y, g.eyeR, eyeRef.current); }
+      if (lipRef.current > 1) magnify(g.mouth.x, g.mouth.y, g.faceW * 0.2, lipRef.current);
     }
-    function starPath(cx: number, cy: number, r: number) {
-      ctx!.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const rad = i % 2 === 0 ? r : r * 0.45;
-        const a = (Math.PI / 5) * i - Math.PI / 2;
-        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
-        i === 0 ? ctx!.moveTo(x, y) : ctx!.lineTo(x, y);
-      }
-      ctx!.closePath();
-    }
+
+    function ellipse(x: number, y: number, rx: number, ry: number, a: number, fill: string) { ctx!.fillStyle = fill; ctx!.beginPath(); ctx!.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx!.fill(); }
+    function heartPath(cx: number, cy: number, s: number) { ctx!.beginPath(); ctx!.moveTo(cx, cy + s * 0.35); ctx!.bezierCurveTo(cx + s, cy - s * 0.5, cx + s * 0.55, cy - s, cx, cy - s * 0.35); ctx!.bezierCurveTo(cx - s * 0.55, cy - s, cx - s, cy - s * 0.5, cx, cy + s * 0.35); ctx!.closePath(); }
+    function starPath(cx: number, cy: number, r: number) { ctx!.beginPath(); for (let i = 0; i < 10; i++) { const rad = i % 2 === 0 ? r : r * 0.45; const a = (Math.PI / 5) * i - Math.PI / 2; const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad; i === 0 ? ctx!.moveTo(x, y) : ctx!.lineTo(x, y); } ctx!.closePath(); }
 
     function drawEffect(g: Geo) {
       const k = effRef.current;
@@ -112,78 +141,35 @@ export function LiveCamera({
       const rot = (fn: () => void, at: XY, a = angle) => { ctx!.save(); ctx!.translate(at.x, at.y); ctx!.rotate(a); fn(); ctx!.restore(); };
 
       if (k === "pinkglass") {
-        for (const e of [lEyeC, rEyeC]) {
-          ctx!.lineWidth = eyeR * 0.18; ctx!.strokeStyle = "#ff4fa3";
-          ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, "rgba(255,90,170,0.38)");
-          ctx!.beginPath(); ctx!.ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, 0, Math.PI * 2); ctx!.stroke();
-        }
+        for (const e of [lEyeC, rEyeC]) { ctx!.lineWidth = eyeR * 0.18; ctx!.strokeStyle = "#ff4fa3"; ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, "rgba(255,90,170,0.38)"); ctx!.beginPath(); ctx!.ellipse(e.x, e.y, eyeR * 1.2, eyeR * 1.0, angle, 0, Math.PI * 2); ctx!.stroke(); }
         rot(() => { ctx!.strokeStyle = "#ff4fa3"; ctx!.lineWidth = eyeR * 0.16; ctx!.beginPath(); ctx!.moveTo(-(dist(lEyeC, rEyeC) / 2 - eyeR), 0); ctx!.lineTo(dist(lEyeC, rEyeC) / 2 - eyeR, 0); ctx!.stroke(); }, { x: (lEyeC.x + rEyeC.x) / 2, y: (lEyeC.y + rEyeC.y) / 2 });
         return;
       }
-      if (k === "barbieglass") {
-        for (const e of [lEyeC, rEyeC]) { ctx!.fillStyle = "rgba(255,105,180,0.45)"; heartPath(e.x, e.y, eyeR * 1.3); ctx!.fill(); ctx!.lineWidth = eyeR * 0.16; ctx!.strokeStyle = "#ff2e88"; ctx!.stroke(); }
-        return;
-      }
+      if (k === "barbieglass") { for (const e of [lEyeC, rEyeC]) { ctx!.fillStyle = "rgba(255,105,180,0.45)"; heartPath(e.x, e.y, eyeR * 1.3); ctx!.fill(); ctx!.lineWidth = eyeR * 0.16; ctx!.strokeStyle = "#ff2e88"; ctx!.stroke(); } return; }
       if (k === "bandopink") {
         rot(() => {
           ctx!.strokeStyle = "#ff5fa8"; ctx!.lineWidth = faceW * 0.13; ctx!.lineCap = "round";
           ctx!.beginPath(); ctx!.arc(0, -faceW * 0.02, faceW * 0.56, Math.PI * 1.12, Math.PI * 1.88); ctx!.stroke();
-          // pita
-          ctx!.fillStyle = "#ff4fa3";
-          const bx = faceW * 0.5, by = -faceW * 0.32;
+          ctx!.fillStyle = "#ff4fa3"; const bx = faceW * 0.5, by = -faceW * 0.32;
           ctx!.beginPath(); ctx!.moveTo(bx, by); ctx!.lineTo(bx + faceW * 0.18, by - faceW * 0.12); ctx!.lineTo(bx + faceW * 0.18, by + faceW * 0.12); ctx!.closePath(); ctx!.fill();
           ctx!.beginPath(); ctx!.moveTo(bx, by); ctx!.lineTo(bx + faceW * 0.34, by - faceW * 0.12); ctx!.lineTo(bx + faceW * 0.34, by + faceW * 0.12); ctx!.closePath(); ctx!.fill();
           ctx!.fillStyle = "#ff8ec5"; ctx!.beginPath(); ctx!.arc(bx + faceW * 0.17, by, faceW * 0.05, 0, Math.PI * 2); ctx!.fill();
-        }, head);
-        return;
+        }, head); return;
       }
       if (k === "butterflypink") {
-        rot(() => {
-          const s = faceW * 0.22;
-          for (const sg of [-1, 1]) {
-            ellipse(sg * s * 0.7, -faceW * 0.5, s * 0.7, s * 0.55, sg * 0.4, "rgba(255,120,190,0.85)");
-            ellipse(sg * s * 0.8, -faceW * 0.36, s * 0.5, s * 0.4, sg * -0.3, "rgba(255,170,215,0.85)");
-          }
-          ctx!.fillStyle = "#d12f7e"; ctx!.fillRect(-s * 0.06, -faceW * 0.6, s * 0.12, s * 1.0);
-        }, head);
-        return;
+        rot(() => { const s = faceW * 0.22; for (const sg of [-1, 1]) { ellipse(sg * s * 0.7, -faceW * 0.5, s * 0.7, s * 0.55, sg * 0.4, "rgba(255,120,190,0.85)"); ellipse(sg * s * 0.8, -faceW * 0.36, s * 0.5, s * 0.4, sg * -0.3, "rgba(255,170,215,0.85)"); } ctx!.fillStyle = "#d12f7e"; ctx!.fillRect(-s * 0.06, -faceW * 0.6, s * 0.12, s); }, head); return;
       }
       if (k === "revefairycap") {
-        rot(() => {
-          const w = faceW * 0.85;
-          ctx!.fillStyle = "#ffd1ec";
-          ctx!.beginPath();
-          ctx!.moveTo(-w / 2, -faceW * 0.34);
-          ctx!.lineTo(-w / 4, -faceW * 0.66); ctx!.lineTo(0, -faceW * 0.4);
-          ctx!.lineTo(w / 4, -faceW * 0.66); ctx!.lineTo(w / 2, -faceW * 0.34);
-          ctx!.closePath(); ctx!.fill();
-          ctx!.fillStyle = "#ff7ac0"; ctx!.beginPath(); ctx!.arc(0, -faceW * 0.45, faceW * 0.05, 0, Math.PI * 2); ctx!.fill();
-        }, head);
-        // kilau
-        ctx!.fillStyle = "rgba(255,255,255,0.95)";
-        for (const [dx, dy, r] of [[-0.5, -0.5, 0.05], [0.55, -0.4, 0.04], [0.3, -0.7, 0.035]] as const) {
-          starPath(nose.x + faceW * dx, nose.y + faceW * dy, faceW * r); ctx!.fill();
-        }
+        rot(() => { const w = faceW * 0.85; ctx!.fillStyle = "#ffd1ec"; ctx!.beginPath(); ctx!.moveTo(-w / 2, -faceW * 0.34); ctx!.lineTo(-w / 4, -faceW * 0.66); ctx!.lineTo(0, -faceW * 0.4); ctx!.lineTo(w / 4, -faceW * 0.66); ctx!.lineTo(w / 2, -faceW * 0.34); ctx!.closePath(); ctx!.fill(); ctx!.fillStyle = "#ff7ac0"; ctx!.beginPath(); ctx!.arc(0, -faceW * 0.45, faceW * 0.05, 0, Math.PI * 2); ctx!.fill(); }, head);
+        ctx!.fillStyle = "rgba(255,255,255,0.95)"; for (const [dx, dy, r] of [[-0.5, -0.5, 0.05], [0.55, -0.4, 0.04], [0.3, -0.7, 0.035]] as const) { starPath(nose.x + faceW * dx, nose.y + faceW * dy, faceW * r); ctx!.fill(); }
         return;
       }
       if (k === "tramp") {
-        rot(() => {
-          ctx!.fillStyle = "#1a1a1a";
-          ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.4, faceW * 0.55, faceW * 0.12, 0, 0, Math.PI * 2); ctx!.fill();
-          ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.5, faceW * 0.34, faceW * 0.28, 0, Math.PI, Math.PI * 2); ctx!.fill();
-          ctx!.fillRect(-faceW * 0.34, -faceW * 0.5, faceW * 0.68, faceW * 0.1);
-        }, head);
-        // kumis
-        ctx!.fillStyle = "#111";
-        for (const sg of [-1, 1]) { ctx!.beginPath(); ctx!.ellipse(nose.x + sg * faceW * 0.08, nose.y + faceW * 0.12, faceW * 0.1, faceW * 0.05, sg * 0.3, 0, Math.PI * 2); ctx!.fill(); }
+        rot(() => { ctx!.fillStyle = "#1a1a1a"; ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.4, faceW * 0.55, faceW * 0.12, 0, 0, Math.PI * 2); ctx!.fill(); ctx!.beginPath(); ctx!.ellipse(0, -faceW * 0.5, faceW * 0.34, faceW * 0.28, 0, Math.PI, Math.PI * 2); ctx!.fill(); ctx!.fillRect(-faceW * 0.34, -faceW * 0.5, faceW * 0.68, faceW * 0.1); }, head);
+        ctx!.fillStyle = "#111"; for (const sg of [-1, 1]) { ctx!.beginPath(); ctx!.ellipse(nose.x + sg * faceW * 0.08, nose.y + faceW * 0.12, faceW * 0.1, faceW * 0.05, sg * 0.3, 0, Math.PI * 2); ctx!.fill(); }
         return;
       }
-      if (k === "fusiinos1206") {
-        magnify(lEyeC.x, lEyeC.y, eyeR, 1.45);
-        magnify(rEyeC.x, rEyeC.y, eyeR, 1.45);
-        magnify(mouth.x, mouth.y, faceW * 0.22, 1.25);
-        return;
-      }
+      if (k === "fusiinos1206") { magnify(lEyeC.x, lEyeC.y, eyeR, 1.5); magnify(rEyeC.x, rEyeC.y, eyeR, 1.5); magnify(mouth.x, mouth.y, faceW * 0.22, 1.3); return; }
     }
 
     interface Geo { angle: number; faceW: number; nose: XY; mouth: XY; head: XY; lEyeC: XY; rEyeC: XY; eyeR: number; cx: number; cy: number; rx: number; ry: number; }
@@ -195,28 +181,12 @@ export function LiveCamera({
       const faceW = dist(left, right) || dist(eR, eL) * 2.5;
       const rEyeC = { x: (P(33).x + P(133).x) / 2, y: (P(33).y + P(133).y) / 2 };
       const lEyeC = { x: (P(263).x + P(362).x) / 2, y: (P(263).y + P(362).y) / 2 };
-      const eyeR = Math.max(dist(P(33), P(133)), dist(P(263), P(362))) * 0.62;
+      const eyeR = Math.max(dist(P(33), P(133)), dist(P(263), P(362))) * 0.6;
       const mouth = { x: (P(13).x + P(14).x) / 2, y: (P(13).y + P(14).y) / 2 };
       const head = { x: top.x, y: top.y - faceW * 0.05 };
       const cx = (left.x + right.x) / 2, cy = (top.y + bottom.y) / 2;
-      const rx = (dist(left, right) / 2) * 1.12, ry = (dist(top, bottom) / 2) * 1.15;
+      const rx = (dist(left, right) / 2) * 1.1, ry = (dist(top, bottom) / 2) * 1.15;
       return { angle, faceW, nose: P(1), mouth, head, lEyeC, rEyeC, eyeR, cx, cy, rx, ry };
-    }
-
-    // haluskan + warnai KULIT (area wajah saja)
-    function beautifySkin(g: Geo, W: number, H: number, strength: number, color: string) {
-      buf.width = W; buf.height = H;
-      const bctx = buf.getContext("2d");
-      if (!bctx) return;
-      bctx.filter = `blur(${Math.max(3, W * 0.006)}px)`;
-      bctx.drawImage(v!, 0, 0, W, H);
-      bctx.filter = "none";
-      ctx!.save();
-      ctx!.beginPath(); ctx!.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, Math.PI * 2); ctx!.clip();
-      ctx!.globalAlpha = 0.55; ctx!.drawImage(buf, 0, 0); ctx!.globalAlpha = 1;
-      ctx!.fillStyle = color; ctx!.globalAlpha = Math.min(0.55, strength); ctx!.fillRect(0, 0, W, H);
-      ctx!.globalAlpha = 1;
-      ctx!.restore();
     }
 
     let lastDetect = 0;
@@ -229,24 +199,18 @@ export function LiveCamera({
       ctx.drawImage(v, 0, 0, W, H);
       ctx.filter = "none";
 
-      const needFaces = effRef.current !== "none" || whiteRef.current > 0;
+      const beauty = whiteRef.current > 0 || eyeRef.current > 1 || lipRef.current > 1;
+      const needFaces = effRef.current !== "none" || beauty;
       const lm = lmRef.current;
       if (needFaces && lm) {
         const now = performance.now();
-        if (now - lastDetect > 55) {
-          lastDetect = now;
-          try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ }
-        }
+        if (now - lastDetect > 55) { lastDetect = now; try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
         for (const face of facesRef.current) {
           const g = geoOf(face, W, H);
-          if (whiteRef.current > 0) beautifySkin(g, W, H, whiteRef.current, tintRef.current);
+          if (whiteRef.current > 0) blendSkin(g, W, H, whiteRef.current, tintRef.current);
+          reshape(g);
           if (effRef.current !== "none") drawEffect(g);
         }
-        if (whiteRef.current > 0 && facesRef.current.length === 0) {
-          ctx.fillStyle = tintRef.current; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
-        }
-      } else if (whiteRef.current > 0) {
-        ctx.fillStyle = tintRef.current; ctx.globalAlpha = whiteRef.current * 0.5; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
       }
     };
     rafRef.current = requestAnimationFrame(loop);

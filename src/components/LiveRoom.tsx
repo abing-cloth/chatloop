@@ -16,18 +16,18 @@ const CHATTER = [
   "Ditunggu konten berikutnya 🙏", "LFG! 🚀", "Ngakak 🤣", "Auto follow 🔔",
 ];
 
-// Filter (nama gaya viral). `white` = kekuatan proses kulit, `tint` = warna nuansa kulit.
+// Filter (nama gaya viral). white=proses kulit, tint=warna kulit, eye/lip=ubah fisik wajah.
 const FILTERS = [
-  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff" },
-  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.2, tint: "#fff5f2" },
-  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.16, tint: "#ffdbe2" },
-  { key: "blueblur", label: "Blue Blur", css: "blur(1.2px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.08, tint: "#dbe8ff" },
-  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.08)", white: 0.1, tint: "#fff2dd" },
-  { key: "overexposure", label: "Over Exposure", css: "brightness(1.4) contrast(0.82) saturate(1.05)", white: 0.3, tint: "#ffffff" },
-  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.1, tint: "#fffaf5" },
-  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.05)", white: 0.16, tint: "#ffd6ea" },
-  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.24, tint: "#fff4f0" },
-  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff" },
+  { key: "normal", label: "Normal", css: "none", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
+  { key: "beautyfilter", label: "Beauty Filter", css: "saturate(1.1)", white: 0.22, tint: "#fff5f2", eye: 1.2, lip: 1.08 },
+  { key: "beautymouth", label: "Beauty Mouth", css: "saturate(1.16) contrast(1.02)", white: 0.18, tint: "#ffdbe2", eye: 1.12, lip: 1.32 },
+  { key: "blueblur", label: "Blue Blur", css: "blur(1px) hue-rotate(-12deg) saturate(1.1) brightness(1.04)", white: 0.12, tint: "#dbe8ff", eye: 1.14, lip: 1.06 },
+  { key: "dontworry", label: "Don't Worry", css: "sepia(0.18) saturate(1.3) brightness(1.06)", white: 0.12, tint: "#fff2dd", eye: 1.12, lip: 1.06 },
+  { key: "overexposure", label: "Over Exposure", css: "brightness(1.32) contrast(0.84) saturate(1.05)", white: 0.32, tint: "#ffffff", eye: 1.12, lip: 1.06 },
+  { key: "natural111", label: "Natural 111", css: "saturate(1.08) contrast(1.03)", white: 0.12, tint: "#fffaf5", eye: 1.1, lip: 1.04 },
+  { key: "kindofcute", label: "Kind of Cute", css: "saturate(1.2) brightness(1.04)", white: 0.18, tint: "#ffd6ea", eye: 1.35, lip: 1.14 },
+  { key: "fusiinos", label: "Fusi Wajah Inos", css: "saturate(1.15) contrast(1.02)", white: 0.26, tint: "#fff4f0", eye: 1.32, lip: 1.2 },
+  { key: "bw", label: "B&W", css: "grayscale(1) contrast(1.1)", white: 0, tint: "#ffffff", eye: 1, lip: 1 },
 ];
 
 const STICKERS = ["😎", "🤪", "🐶", "👑", "🔥", "💀", "🤡", "👽", "🦄", "🥸", "🤖", "😂", "🎉", "💅", "🐸", "🍌"];
@@ -71,6 +71,8 @@ export function LiveRoom({
   const filterCss = fltDef.css ?? "none";
   const whiteOverlay = fltDef.white ?? 0;
   const tint = fltDef.tint ?? "#ffffff";
+  const eyeScale = fltDef.eye ?? 1;
+  const lipScale = fltDef.lip ?? 1;
 
   useEffect(() => {
     const c = setInterval(() => {
@@ -126,7 +128,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} effect={ar} facing={facing} onError={() => setCamError(true)} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} effect={ar} facing={facing} onError={() => setCamError(true)} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
