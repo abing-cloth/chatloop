@@ -27,7 +27,7 @@ ChatLoop berjalan di **web (Canvas2D + WebGL)** sehingga ekuivalen Effect House 
 - **Fungsi:** ganti latar (blur, warna, hologram, studio)
 - **Node Effect House:** Background Segmentation
 - **Kode inti GLSL:** `if (segMask < 0.5) color = texture2D(bgTex, uv);`
-- **ChatLoop:** ✅ `faceFx.applyBackground` (MediaPipe Selfie Segmentation → komposit orang di atas latar)
+- **ChatLoop:** ✅ `faceFx.applyBackground` (MediaPipe Selfie Segmentation → komposit orang di atas latar). Mode: Blur · Hologram · Studio · **Bokeh/Pantai/Senja/Alam** (scene prosedural, cache per-ukuran) · **📷 Foto custom** (dari galeri)
 
 ## 5. 3D Object / Topeng
 - **Fungsi:** topeng, mahkota, kacamata, topi
