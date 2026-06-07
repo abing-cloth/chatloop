@@ -295,7 +295,7 @@ export function Shop({
 }
 
 function Reviews({ productId, canReview }: { productId: string; canReview: boolean }) {
-  const reviews = useStore((s) => s.reviews.filter((r) => r.productId === productId));
+  const reviews = useStore((s) => s.reviews).filter((r) => r.productId === productId);
   const user = useStore((s) => s.user);
   const addReview = useStore((s) => s.addReview);
   const me = useStore((s) => s.currentUserId);

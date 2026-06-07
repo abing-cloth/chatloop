@@ -59,7 +59,7 @@ export function Groups() {
 }
 
 function GroupDetail({ group, onBack }: { group: Group; onBack: () => void }) {
-  const posts = useStore((s) => s.groupPosts.filter((p) => p.groupId === group.id));
+  const posts = useStore((s) => s.groupPosts).filter((p) => p.groupId === group.id);
   const user = useStore((s) => s.user);
   const me = useStore((s) => s.me());
   const joined = useStore((s) => s.joinedGroupIds.includes(group.id));

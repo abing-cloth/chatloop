@@ -155,7 +155,7 @@ function ReelCard({ reel, muted, onToggleMute }: { reel: Reel; muted: boolean; o
 }
 
 function ReelComments({ reelId, onClose }: { reelId: string; onClose: () => void }) {
-  const comments = useStore((s) => s.reelComments.filter((c) => c.reelId === reelId));
+  const comments = useStore((s) => s.reelComments).filter((c) => c.reelId === reelId);
   const user = useStore((s) => s.user);
   const add = useStore((s) => s.addReelComment);
   const [text, setText] = useState("");

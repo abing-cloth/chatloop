@@ -5,9 +5,9 @@ import { useT } from "../lib/i18n";
 
 export function Insights() {
   const me = useStore((s) => s.me());
-  const posts = useStore((s) => s.posts.filter((p) => p.userId === me.id));
-  const reels = useStore((s) => s.reels.filter((r) => r.userId === me.id));
-  const products = useStore((s) => s.products.filter((p) => p.sellerId === me.id));
+  const posts = useStore((s) => s.posts).filter((p) => p.userId === me.id);
+  const reels = useStore((s) => s.reels).filter((r) => r.userId === me.id);
+  const products = useStore((s) => s.products).filter((p) => p.sellerId === me.id);
   const followers = useStore((s) => s.followerCount(me.id));
   const earnings = useStore((s) => s.walletTx.filter((t) => t.type === "penjualan").reduce((n, t) => n + t.amount, 0));
   const tr = useT();

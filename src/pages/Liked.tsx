@@ -5,7 +5,7 @@ import { useT } from "../lib/i18n";
 
 export function Liked() {
   const me = useStore((s) => s.currentUserId);
-  const posts = useStore((s) => s.posts.filter((p) => p.likedBy.includes(me)));
+  const posts = useStore((s) => s.posts).filter((p) => p.likedBy.includes(me));
   const tr = useT();
 
   return (

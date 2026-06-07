@@ -17,9 +17,11 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
   const target = useStore((s) => (profileUserId ? s.user(profileUserId) : s.me()));
   const isSelf = !profileUserId || profileUserId === me.id;
 
-  const posts = useStore((s) => s.posts.filter((p) => p.userId === target.id));
-  const reels = useStore((s) => s.reels.filter((r) => r.userId === target.id));
-  const products = useStore((s) => s.products.filter((p) => p.sellerId === target.id));
+  // catatan: .filter() di LUAR selector — selector harus kembalikan ref stabil (array store),
+  // kalau di dalam selector ia bikin array baru tiap render → loop tak hingga (React #185).
+  const posts = useStore((s) => s.posts).filter((p) => p.userId === target.id);
+  const reels = useStore((s) => s.reels).filter((r) => r.userId === target.id);
+  const products = useStore((s) => s.products).filter((p) => p.sellerId === target.id);
   const allUsers = useStore((s) => s.users);
   const update = useStore((s) => s.updateProfile);
   const tryRename = useStore((s) => s.tryRename);
@@ -108,8 +110,8 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
         </div>
 
         <div className="px-6 pb-6">
-          <div className="-mt-12 flex items-end justify-between">
-            <div className="relative">
+          <div className="-mt-12 flex items-end gap-3">
+            <div className="relative shrink-0">
               <img src={target.avatar} alt={target.name} className="h-24 w-24 rounded-full border-4 border-white object-cover shadow dark:border-zinc-900" />
               {isSelf && (
                 <>
@@ -118,22 +120,32 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
                 </>
               )}
             </div>
+            {/* statistik di sebelah foto profil: pengikut · mengikuti · suka */}
+            <div className="flex flex-1 items-center justify-around gap-1 pb-2">
+              <Stat label="Postingan" value={posts.length} />
+              <Stat label="Pengikut" value={followerCount} onClick={() => setList("followers")} />
+              <Stat label="Mengikuti" value={followingCount} onClick={() => setList("following")} />
+              <Stat label="Suka" value={likes} />
+            </div>
+          </div>
 
+          {/* tombol aksi */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {isSelf ? (
-              <div className="flex items-center gap-2">
+              <>
                 <button onClick={() => { setEditing((v) => !v); setErr(""); }} className="flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"><Pencil size={15} /> Edit</button>
                 <button onClick={() => onNavigate("insights")} title="Insight" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><BarChart3 size={16} /></button>
                 <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
                 <button onClick={() => onNavigate("settings")} title="Pengaturan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 lg:hidden dark:border-zinc-700 dark:text-zinc-300"><SettingsIcon size={15} /></button>
                 <button onClick={logout} title="Keluar" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-red-600 lg:hidden dark:border-zinc-700"><LogOut size={15} /></button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 <button onClick={() => toggleFollow(target.id)} className={cn("rounded-full px-5 py-2 text-sm font-semibold transition", isFollowing ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800" : "bg-fuchsia-600 text-white hover:bg-fuchsia-700")}>{isFollowing ? tr("common.following") : tr("common.follow")}</button>
                 <button onClick={() => { startChat(target.id); onNavigate("messages"); }} title="Pesan" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><MessageCircle size={18} /></button>
                 <button onClick={() => setShare(true)} title="Bagikan profil" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"><Share2 size={16} /></button>
                 <button onClick={() => toggleBlock(target.id)} title={isBlocked ? "Buka blokir" : "Blokir"} className={cn("grid h-10 w-10 place-items-center rounded-full border", isBlocked ? "border-red-300 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/40" : "border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300")}><Ban size={16} /></button>
-              </div>
+              </>
             )}
           </div>
 
@@ -167,12 +179,6 @@ export function Profile({ onNavigate }: { onNavigate: (v: View) => void }) {
             </div>
           )}
 
-          <div className="mt-5 flex gap-8 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-            <Stat label="Postingan" value={posts.length} />
-            <Stat label="Pengikut" value={followerCount} onClick={() => setList("followers")} />
-            <Stat label="Mengikuti" value={followingCount} onClick={() => setList("following")} />
-            <Stat label="Suka" value={likes} />
-          </div>
         </div>
       </div>
 

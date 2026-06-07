@@ -11,6 +11,9 @@ interface HostConfig {
   category: string;
 }
 
+// kategori live baku — selalu tampil untuk semua pengguna (tak bergantung siaran yang ada)
+const LIVE_CATEGORIES = ["Obrolan", "Musik", "Game", "Belanja", "Edukasi", "Olahraga", "Kecantikan", "Masak", "Jalan-jalan"];
+
 export function Live() {
   const lives = useStore((s) => s.liveStreams);
   const scheduled = useStore((s) => s.scheduledLives);
@@ -19,7 +22,7 @@ export function Live() {
   const user = useStore((s) => s.user);
   const tr = useT();
 
-  const categories = ["Semua", ...Array.from(new Set(lives.map((l) => l.category)))];
+  const categories = ["Semua", ...Array.from(new Set([...LIVE_CATEGORIES, ...lives.map((l) => l.category)]))];
   const [cat, setCat] = useState("Semua");
   const [watching, setWatching] = useState<LiveStream | null>(null);
   const [setup, setSetup] = useState(false);
