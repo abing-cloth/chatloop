@@ -246,13 +246,14 @@ export function applyGlow(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasEleme
     const bctx = buf.getContext("2d");
     if (bctx) {
       buf.width = W; buf.height = H;
-      // isolasi highlight lalu lembutkan -> bloom
-      bctx.filter = `brightness(1.35) contrast(1.7) blur(${Math.max(4, W * 0.02)}px)`;
+      // isolasi highlight lalu lembutkan -> bloom (blur lebih besar + opacity lebih rendah
+      // supaya glow lembut, tak jadi "bayangan"/halo dobel di tepi wajah)
+      bctx.filter = `brightness(1.3) contrast(1.8) blur(${Math.max(6, W * 0.03)}px)`;
       bctx.drawImage(canvas, 0, 0, W, H);
       bctx.filter = "none";
       ctx.save();
       ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = Math.min(0.6, strength);
+      ctx.globalAlpha = Math.min(0.42, strength);
       ctx.drawImage(buf, 0, 0, W, H);
       ctx.restore();
     }

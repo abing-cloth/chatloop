@@ -451,16 +451,21 @@ export function LiveCamera({
       const lm = lmRef.current;
       if (needFaces && lm) {
         if (fresh) { try { facesRef.current = (lm.detectForVideo(v, now).faceLandmarks ?? []) as unknown as Pt[][]; } catch { /* */ } }
-        // === SMOOTHING temporal (EMA) -> efek stabil, tak gemetar ===
+        // === SMOOTHING adaptif (velocity-aware) -> anti-getar TANPA bayang-bayang ===
+        // gerak cepat: alpha->1 (efek ikut penuh, tak menjejak); diam: alpha kecil (halus).
         const raw = facesRef.current, sm = smoothRef.current;
         if (sm.length !== raw.length) {
           smoothRef.current = raw.map((f) => f.map((p) => ({ x: p.x, y: p.y, z: p.z })));
         } else {
-          const a = 0.5; // 0..1: kecil=lebih halus/lambat, besar=lebih responsif
+          const LO = 0.35, TH = 0.012; // ambang gerak (frac frame) utk beralih ke pelacakan penuh
           for (let i = 0; i < raw.length; i++) {
             const s = sm[i], t = raw[i];
             if (!s || !t || s.length !== t.length) { sm[i] = t.map((p) => ({ x: p.x, y: p.y, z: p.z })); continue; }
-            for (let j = 0; j < t.length; j++) { s[j].x += (t[j].x - s[j].x) * a; s[j].y += (t[j].y - s[j].y) * a; s[j].z += (t[j].z - s[j].z) * a; }
+            for (let j = 0; j < t.length; j++) {
+              const dx = t[j].x - s[j].x, dy = t[j].y - s[j].y;
+              const a = LO + (1 - LO) * Math.min(1, Math.hypot(dx, dy) / TH);
+              s[j].x += dx * a; s[j].y += dy * a; s[j].z += (t[j].z - s[j].z) * a;
+            }
           }
         }
         const faces = smoothRef.current;
