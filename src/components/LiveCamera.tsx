@@ -386,7 +386,12 @@ export function LiveCamera({
     const loop = () => {
       rafRef.current = requestAnimationFrame(loop);
       if (!v.videoWidth) return;
-      if (c.width !== v.videoWidth) { c.width = v.videoWidth; c.height = v.videoHeight; }
+      // cap resolusi pemrosesan utk performa HP (efek halus & tak nge-lag);
+      // landmark ternormalisasi -> posisi tetap akurat, output di-scale ke layar via CSS
+      const CAP = 720;
+      const sc = Math.min(1, CAP / Math.max(v.videoWidth, v.videoHeight));
+      const cw = Math.round(v.videoWidth * sc), ch = Math.round(v.videoHeight * sc);
+      if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
       const W = c.width, H = c.height;
       ctx.filter = fltRef.current || "none";
       ctx.drawImage(v, 0, 0, W, H);

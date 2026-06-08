@@ -17,7 +17,7 @@ export async function getFaceLandmarker(): Promise<FaceLandmarker | null> {
       instance = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: { modelAssetPath: MODEL, delegate: "GPU" },
         runningMode: "VIDEO",
-        numFaces: 5,
+        numFaces: 3,
       });
       return instance;
     } catch {
@@ -27,7 +27,7 @@ export async function getFaceLandmarker(): Promise<FaceLandmarker | null> {
         instance = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: { modelAssetPath: MODEL, delegate: "CPU" },
           runningMode: "VIDEO",
-          numFaces: 5,
+          numFaces: 3,
         });
         return instance;
       } catch {
