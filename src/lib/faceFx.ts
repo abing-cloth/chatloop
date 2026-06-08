@@ -117,15 +117,47 @@ function sceneBg(mode: string, W: number, H: number): HTMLCanvasElement {
       g.fillStyle = rg; g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill();
     }
   } else if (mode === "beach") {
-    vGrad(g, W, H, [[0, "#aee3ff"], [0.5, "#dff4ff"], [0.62, "#5cc2e0"], [0.74, "#3ba6cf"], [0.75, "#f4e4b8"], [1, "#e8cf92"]]);
-    const sun = g.createRadialGradient(W * 0.74, H * 0.2, 0, W * 0.74, H * 0.2, S * 0.22);
-    sun.addColorStop(0, "rgba(255,250,220,0.95)"); sun.addColorStop(1, "rgba(255,250,220,0)");
-    g.fillStyle = sun; g.fillRect(0, 0, W, H);
+    const hz = H * 0.54, seaB = H * 0.78;
+    // langit
+    const sky = g.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, "#4fb0ef"); sky.addColorStop(1, "#cfeeff");
+    g.fillStyle = sky; g.fillRect(0, 0, W, hz);
+    // matahari + cahaya
+    const sx = W * 0.74, sy = hz * 0.42, sr = S * 0.07;
+    const sg = g.createRadialGradient(sx, sy, 0, sx, sy, sr * 3); sg.addColorStop(0, "rgba(255,250,210,0.95)"); sg.addColorStop(0.3, "rgba(255,244,180,0.55)"); sg.addColorStop(1, "rgba(255,244,180,0)");
+    g.fillStyle = sg; g.fillRect(0, 0, W, hz);
+    g.fillStyle = "#fff6d6"; g.beginPath(); g.arc(sx, sy, sr, 0, Math.PI * 2); g.fill();
+    // laut
+    const sea = g.createLinearGradient(0, hz, 0, seaB); sea.addColorStop(0, "#1b7fb6"); sea.addColorStop(1, "#39abda");
+    g.fillStyle = sea; g.fillRect(0, hz, W, seaB - hz);
+    // pantulan matahari di laut
+    const refl = g.createLinearGradient(0, hz, 0, seaB); refl.addColorStop(0, "rgba(255,250,210,0.5)"); refl.addColorStop(1, "rgba(255,250,210,0)");
+    g.fillStyle = refl; g.fillRect(sx - S * 0.05, hz, S * 0.1, seaB - hz);
+    // garis ombak
+    g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = Math.max(1, S * 0.004);
+    for (let i = 1; i <= 3; i++) { const y = hz + (seaB - hz) * (i / 4); g.beginPath(); for (let x = 0; x <= W; x += W / 12) (x === 0 ? g.moveTo : g.lineTo).call(g, x, y + Math.sin(x / W * 6 + i) * S * 0.006); g.stroke(); }
+    // pasir + busa pantai
+    const sand = g.createLinearGradient(0, seaB, 0, H); sand.addColorStop(0, "#f4e3b2"); sand.addColorStop(1, "#e2ca82");
+    g.fillStyle = sand; g.fillRect(0, seaB, W, H - seaB);
+    g.fillStyle = "rgba(255,255,255,0.6)"; g.beginPath(); g.moveTo(0, seaB); for (let x = 0; x <= W; x += W / 16) g.lineTo(x, seaB + Math.sin(x / W * 8) * S * 0.012); g.lineTo(W, seaB + S * 0.03); g.lineTo(0, seaB + S * 0.03); g.closePath(); g.fill();
   } else if (mode === "sunset") {
-    vGrad(g, W, H, [[0, "#3a1c6b"], [0.35, "#b5478f"], [0.6, "#ff8a5c"], [0.8, "#ffc56b"], [1, "#ffe3a6"]]);
-    const sun = g.createRadialGradient(W * 0.5, H * 0.7, 0, W * 0.5, H * 0.7, S * 0.4);
-    sun.addColorStop(0, "rgba(255,240,200,0.85)"); sun.addColorStop(1, "rgba(255,240,200,0)");
-    g.fillStyle = sun; g.fillRect(0, 0, W, H);
+    const hz = H * 0.62;
+    // langit senja
+    const sky = g.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, "#2a1a5e"); sky.addColorStop(0.45, "#a63b86"); sky.addColorStop(0.78, "#ff7a4d"); sky.addColorStop(1, "#ffd27a");
+    g.fillStyle = sky; g.fillRect(0, 0, W, hz);
+    // sorot + matahari tenggelam di garis ufuk
+    const sx = W * 0.5, sr = S * 0.16;
+    const halo = g.createRadialGradient(sx, hz, 0, sx, hz, sr * 2.6); halo.addColorStop(0, "rgba(255,230,150,0.85)"); halo.addColorStop(1, "rgba(255,160,90,0)");
+    g.fillStyle = halo; g.fillRect(0, 0, W, H);
+    const disc = g.createRadialGradient(sx, hz - sr * 0.2, 0, sx, hz, sr); disc.addColorStop(0, "#fff3c0"); disc.addColorStop(0.6, "#ffd45e"); disc.addColorStop(1, "#ff9d49");
+    g.fillStyle = disc; g.beginPath(); g.arc(sx, hz, sr, 0, Math.PI * 2); g.fill();
+    // laut (menutup separuh bawah matahari -> setengah tenggelam)
+    const sea = g.createLinearGradient(0, hz, 0, H); sea.addColorStop(0, "#cf5e3a"); sea.addColorStop(0.4, "#7e3f6b"); sea.addColorStop(1, "#34204f");
+    g.fillStyle = sea; g.fillRect(0, hz, W, H - hz);
+    // kolom pantulan matahari di laut
+    const refl = g.createLinearGradient(0, hz, 0, H); refl.addColorStop(0, "rgba(255,215,130,0.8)"); refl.addColorStop(1, "rgba(255,150,90,0)");
+    g.fillStyle = refl; g.beginPath(); g.moveTo(sx - sr * 0.5, hz); g.lineTo(sx + sr * 0.5, hz); g.lineTo(sx + sr * 1.3, H); g.lineTo(sx - sr * 1.3, H); g.closePath(); g.fill();
+    // garis ufuk berkilau
+    g.fillStyle = "rgba(255,240,200,0.6)"; g.fillRect(0, hz - Math.max(1, S * 0.004), W, Math.max(2, S * 0.008));
   } else if (mode === "nature") {
     vGrad(g, W, H, [[0, "#d7f0c8"], [0.5, "#a6d68a"], [1, "#5f9e58"]]);
     const r = rng(11);

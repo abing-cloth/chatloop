@@ -1,11 +1,12 @@
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+import { asset } from "./utils";
 
 let instance: FaceLandmarker | null = null;
 let loading: Promise<FaceLandmarker | null> | null = null;
 
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
-const MODEL =
-  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+// model di-host sendiri (same-origin) -> andal & cepat, tak bergantung storage.googleapis
+const MODEL = asset("mp/face_landmarker.task");
 
 /** Muat FaceLandmarker sekali (lacak hingga 5 wajah). Null jika gagal/tak didukung. */
 export async function getFaceLandmarker(): Promise<FaceLandmarker | null> {

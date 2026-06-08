@@ -1,10 +1,11 @@
 import { ImageSegmenter, FilesetResolver } from "@mediapipe/tasks-vision";
+import { asset } from "./utils";
 
 let instance: ImageSegmenter | null = null;
 let loading: Promise<ImageSegmenter | null> | null = null;
 
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
-const MODEL = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite";
+const MODEL = asset("mp/selfie_segmenter.tflite"); // di-host sendiri (same-origin)
 
 async function create(delegate: "GPU" | "CPU") {
   const vision = await FilesetResolver.forVisionTasks(WASM);
