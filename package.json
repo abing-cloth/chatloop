@@ -14,12 +14,14 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "three": "^0.171.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.171.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",

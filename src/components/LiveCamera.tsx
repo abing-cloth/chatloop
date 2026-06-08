@@ -4,6 +4,7 @@ import { getFaceLandmarker } from "../lib/faceLandmarker";
 import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, tintStrength, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 import { loadGender, detectGender } from "../lib/genderDetect";
 import { applyLUT } from "../lib/lut";
+import { topeng3dRender, TOPENG_3D } from "../lib/topeng3d";
 
 export type GenderMode = "auto" | "cewek" | "cowok";
 
@@ -34,6 +35,11 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string; group: st
   { key: "kalung", label: "Kalung", icon: "📿", group: "Aksesori" },
   // Game / Interactive (kategori 10)
   { key: "kedipgame", label: "Kedip Skor", icon: "👁️", group: "Game" },
+  // Topeng 3D asli (three.js) — kategori 5 (3D penuh)
+  { key: "glasses3d", label: "Kacamata 3D", icon: "🕶️", group: "Topeng 3D" },
+  { key: "crown3d", label: "Mahkota 3D", icon: "👑", group: "Topeng 3D" },
+  { key: "dog3d", label: "Anjing 3D", icon: "🐶", group: "Topeng 3D" },
+  { key: "mask3d", label: "Visor 3D", icon: "🤖", group: "Topeng 3D" },
 ];
 
 // Particle: set emoji per jenis (kategori 8). hati = naik dari bawah, lainnya jatuh.
@@ -501,6 +507,11 @@ export function LiveCamera({
       // grade LUT sinematik (lapisan akhir, sebelum partikel)
       const ln = lutRef.current;
       if (ln) { const gcv = applyLUT(c, W, H, ln, 0.92); if (gcv) ctx.drawImage(gcv, 0, 0, W, H); }
+      // topeng 3D (three.js) — objek 3D menempel & berputar dgn pose kepala
+      if (TOPENG_3D.includes(effRef.current) && facesRef.current.length) {
+        const t3 = topeng3dRender(smoothRef.current as unknown as { x: number; y: number; z?: number }[][], W, H, effRef.current);
+        if (t3) ctx.drawImage(t3, 0, 0, W, H);
+      }
       stepParticles(W, H, fresh); // particle/burst di lapisan paling atas
     };
     rafRef.current = requestAnimationFrame(loop);
