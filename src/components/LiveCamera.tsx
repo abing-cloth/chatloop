@@ -40,6 +40,8 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string; group: st
   { key: "crown3d", label: "Mahkota 3D", icon: "👑", group: "Topeng 3D" },
   { key: "dog3d", label: "Anjing 3D", icon: "🐶", group: "Topeng 3D" },
   { key: "mask3d", label: "Visor 3D", icon: "🤖", group: "Topeng 3D" },
+  // Text / Typografi 3D (kategori 11)
+  { key: "nama3d", label: "Nama 3D", icon: "🪧", group: "Teks 3D" },
 ];
 
 // Particle: set emoji per jenis (kategori 8). hati = naik dari bawah, lainnya jatuh.
@@ -83,6 +85,7 @@ export function LiveCamera({
   bgImage,
   bgVideo,
   lut,
+  topengText,
   effect,
   facing,
   onReady,
@@ -97,6 +100,7 @@ export function LiveCamera({
   bgImage?: string | null; // dataURL latar custom (mode image)
   bgVideo?: string | null; // objectURL video latar (mode video)
   lut?: string | null; // color grading LUT (nama dari lib/lut.ts)
+  topengText?: string; // teks utk Nama 3D
   onScore?: (n: number) => void; // skor game kedip
   onCanvasReady?: (c: HTMLCanvasElement) => void; // ekspos kanvas utk capture
   whiteOverlay?: number; // kekuatan proses kulit wajah (haluskan+cerahkan+tint)
@@ -147,6 +151,8 @@ export function LiveCamera({
   const smoothRef = useRef<Pt[][]>([]); // landmark ter-smoothing (anti-jitter)
   const particlesRef = useRef<Particle[]>([]);
   const lutRef = useRef(lut);
+  const topengTextRef = useRef(topengText);
+  topengTextRef.current = topengText;
   const scoreRef = useRef(0);
   const blinkRef = useRef(false); // mata sedang tertutup?
   const onScoreRef = useRef(onScore);
@@ -509,7 +515,7 @@ export function LiveCamera({
       if (ln) { const gcv = applyLUT(c, W, H, ln, 0.92); if (gcv) ctx.drawImage(gcv, 0, 0, W, H); }
       // topeng 3D (three.js) — objek 3D menempel & berputar dgn pose kepala
       if (TOPENG_3D.includes(effRef.current) && facesRef.current.length) {
-        const t3 = topeng3dRender(smoothRef.current as unknown as { x: number; y: number; z?: number }[][], W, H, effRef.current);
+        const t3 = topeng3dRender(smoothRef.current as unknown as { x: number; y: number; z?: number }[][], W, H, effRef.current, topengTextRef.current);
         if (t3) ctx.drawImage(t3, 0, 0, W, H);
       }
       stepParticles(W, H, fresh); // particle/burst di lapisan paling atas

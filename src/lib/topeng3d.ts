@@ -88,17 +88,48 @@ function buildMask(): any {
   return g;
 }
 
-function build(kind: string): any {
+// ── Nama 3D: papan teks (texture dari canvas) melayang di atas kepala ──
+const nameCache: Record<string, { mat: any; aspect: number }> = {};
+function roundRect(x: any, X: number, Y: number, w: number, h: number, r: number) {
+  x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r);
+  x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath();
+}
+function nameMat(text: string) {
+  if (nameCache[text]) return nameCache[text];
+  const c = document.createElement("canvas");
+  const m = c.getContext("2d")!; m.font = "bold 80px Verdana, sans-serif";
+  c.width = Math.ceil(m.measureText(text).width) + 90; c.height = 130;
+  const x = c.getContext("2d")!;
+  const lg = x.createLinearGradient(0, 0, c.width, 0); lg.addColorStop(0, "#d946ef"); lg.addColorStop(1, "#6366f1");
+  x.fillStyle = lg; roundRect(x, 5, 5, c.width - 10, c.height - 10, 44); x.fill();
+  x.lineWidth = 6; x.strokeStyle = "rgba(255,255,255,0.85)"; x.stroke();
+  x.font = "bold 80px Verdana, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.lineWidth = 9; x.strokeStyle = "rgba(0,0,0,0.35)"; x.strokeText(text, c.width / 2, c.height / 2 + 4);
+  x.fillStyle = "#ffffff"; x.fillText(text, c.width / 2, c.height / 2 + 4);
+  const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+  nameCache[text] = { mat: new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }), aspect: c.width / c.height };
+  return nameCache[text];
+}
+function buildName(text: string): any {
+  const { mat, aspect } = nameMat(text || "Nama");
+  const g = new THREE.Group();
+  const p = new THREE.Mesh(G("namePlane", () => new THREE.PlaneGeometry(1, 1)), mat);
+  p.scale.set(aspect * 0.85, 0.85, 1); g.add(p);
+  return g;
+}
+
+function build(kind: string, text?: string): any {
   if (kind === "glasses3d") return buildGlasses();
   if (kind === "crown3d") return buildCrown();
   if (kind === "dog3d") return buildDog();
+  if (kind === "nama3d") return buildName(text || "Nama");
   return buildMask();
 }
 
-export const TOPENG_3D = ["glasses3d", "crown3d", "dog3d", "mask3d"];
+export const TOPENG_3D = ["glasses3d", "crown3d", "dog3d", "mask3d", "nama3d"];
 
 /** Render topeng 3D utk semua wajah -> kembalikan kanvas WebGL (atau null jika belum siap). */
-export function topeng3dRender(faces: XYZ[][], W: number, H: number, kind: string): HTMLCanvasElement | null {
+export function topeng3dRender(faces: XYZ[][], W: number, H: number, kind: string, text?: string): HTMLCanvasElement | null {
   if (!ready) { ensure(); return null; }
   try {
     if (renderer.domElement.width !== W || renderer.domElement.height !== H) renderer.setSize(W, H, false);
@@ -109,15 +140,18 @@ export function topeng3dRender(faces: XYZ[][], W: number, H: number, kind: strin
       if (!f || f.length < 468) continue;
       const L = wv(f[33]), R = wv(f[263]), T = wv(f[10]), B = wv(f[152]);
       const ex = R.clone().sub(L); const inter = ex.length(); if (inter < 1) continue; ex.normalize();
-      const ey0 = T.clone().sub(B).normalize();
-      const ez = ex.clone().cross(ey0).normalize();
-      const ey = ez.clone().cross(ex).normalize();
-      const basis = new THREE.Matrix4().makeBasis(ex, ey, ez);
-      const anchor = kind === "glasses3d" ? wv(f[168]) : kind === "mask3d" ? wv(f[1]) : wv(f[10]);
-      const obj = build(kind);
+      const obj = build(kind, text);
       obj.scale.setScalar(inter);
-      obj.quaternion.setFromRotationMatrix(basis);
-      obj.position.copy(anchor);
+      if (kind === "nama3d") {
+        // melayang di atas kepala, menghadap kamera (mudah dibaca)
+        obj.position.copy(T).add(new THREE.Vector3(0, inter * 1.25, 0));
+      } else {
+        const ey0 = T.clone().sub(B).normalize();
+        const ez = ex.clone().cross(ey0).normalize();
+        const ey = ez.clone().cross(ex).normalize();
+        obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, ez));
+        obj.position.copy(kind === "glasses3d" ? wv(f[168]) : kind === "mask3d" ? wv(f[1]) : wv(f[10]));
+      }
       group.add(obj);
     }
     renderer.render(scene, camera);

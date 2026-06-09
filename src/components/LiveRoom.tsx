@@ -207,7 +207,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} topengText={me.name.split(" ")[0]} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />

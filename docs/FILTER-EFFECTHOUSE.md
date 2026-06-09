@@ -33,7 +33,7 @@ SUUCHAT berjalan di **web (Canvas2D + WebGL + MediaPipe)**, jadi ekuivalen Effec
 - **Fungsi:** topeng, mahkota, kacamata, topi
 - **Node Effect House:** 3D Object + Face Anchor
 - **Transform:** model di-anchor ke landmark (dahi **10**, dagu **152**), skala = jarak antar-mata
-- **SUUCHAT:** versi **2D vektor** di `LiveCamera.drawEffect` (Pink/Barbie Glass, Bando, Butterfly, Reve Fairy Cap, Tramp). 🔜 3D penuh (three.js + glTF).
+- **SUUCHAT:** ✅ **3D penuh (three.js)** di `lib/topeng3d.ts` — Kacamata/Mahkota/Anjing/Visor 3D ber-cahaya, berputar dgn pose kepala (basis 3D landmark). Plus versi 2D vektor di `LiveCamera.drawEffect`. 🔜 model .glb realistis.
 
 ## 6. Color Filter / LUT ✅🟡
 - **Fungsi:** tone film, vintage, aesthetic
@@ -69,7 +69,7 @@ SUUCHAT berjalan di **web (Canvas2D + WebGL + MediaPipe)**, jadi ekuivalen Effec
 - **Fungsi:** nama 3D, lirik berjalan, komentar
 - **Node Effect House:** 2D Text + Animation
 - **Kode inti:** `textPos += time * speed`
-- **SUUCHAT:** komentar real-time + stiker emoji sudah ada. 🔜 overlay "Nama 3D"/teks animasi yang dibakar ke kanvas.
+- **SUUCHAT:** ✅ **Nama 3D** (papan teks 3D melayang di atas kepala via three.js, `topeng3d.ts`) + komentar real-time + stiker emoji.
 
 ## 12. Aksesori Fashion ✅🟡
 - **Fungsi:** anting, kalung, hiasan kepala
