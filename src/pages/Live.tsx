@@ -274,6 +274,7 @@ export function Live() {
           mode="host"
           title={hosting.title}
           category={hosting.category}
+          streamId={hosting.id}
           onClose={() => { endLive(hosting.id); setHosting(null); }}
         />
       )}

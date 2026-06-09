@@ -4,6 +4,8 @@ import { useStore } from "../lib/store";
 import { cn, fileToDataUrl } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
 import { FILTERS, FILTER_CATEGORIES, filterByKey } from "../lib/filters";
+import { startBroadcast, joinViewer } from "../lib/liveRTC";
+import { supabaseEnabled } from "../lib/supabase";
 import type { LiveStream } from "../lib/types";
 
 interface LiveComment { id: number; name: string; avatar: string; text: string }
@@ -23,12 +25,13 @@ let cid = 1, hid = 1, sid = 1;
 const clamp = (n: number) => Math.max(4, Math.min(96, n));
 
 export function LiveRoom({
-  mode, stream, title, category, onClose,
+  mode, stream, title, category, streamId, onClose,
 }: {
   mode: "host" | "viewer";
   stream?: LiveStream;
   title?: string;
   category?: string;
+  streamId?: string; // id siaran (host) utk signaling WebRTC
   onClose: () => void;
 }) {
   const me = useStore((s) => s.me());
@@ -55,6 +58,8 @@ export function LiveRoom({
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [gameScore, setGameScore] = useState(0);
+  const [liveAudioOn, setLiveAudioOn] = useState(false);
+  const liveAudioRef = useRef<HTMLAudioElement | null>(null);
   const [nama3dText, setNama3dText] = useState("");
   const [music, setMusic] = useState<string | null>(null);
   const [voice, setVoice] = useState("none");
@@ -199,6 +204,24 @@ export function LiveRoom({
     audioCtxRef.current?.close().catch(() => {});
   }, []);
 
+  // HOST: siarkan suara mikrofon ke penonton (WebRTC + signaling Supabase)
+  useEffect(() => {
+    if (mode !== "host" || !streamId || !supabaseEnabled) return;
+    let stop: (() => void) | null = null, alive = true;
+    startBroadcast(streamId).then((s) => { if (alive) stop = s; else s?.(); });
+    return () => { alive = false; stop?.(); };
+  }, [mode, streamId]);
+
+  // PENONTON: dengarkan suara host
+  useEffect(() => {
+    const sid = stream?.id;
+    if (mode !== "viewer" || !sid || !supabaseEnabled) return;
+    let stop: (() => void) | null = null, alive = true;
+    joinViewer(sid, (s) => { const a = liveAudioRef.current; if (a) { a.srcObject = s; a.play().catch(() => {}); setLiveAudioOn(true); } })
+      .then((s) => { if (alive) stop = s; else s?.(); });
+    return () => { alive = false; stop?.(); setLiveAudioOn(false); };
+  }, [mode, stream?.id]);
+
   const fltDef = filterByKey(filter);
   const filterCss = fltDef.filterCss ?? "none";
   const whiteOverlay = fltDef.white ?? 0;
@@ -284,6 +307,14 @@ export function LiveRoom({
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
+        )}
+        {/* suara live (WebRTC) */}
+        <audio ref={liveAudioRef} autoPlay playsInline className="hidden" />
+        {mode === "viewer" && supabaseEnabled && (
+          <div className="absolute left-3 top-28 z-20 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+            <span className={cn("h-2 w-2 rounded-full", liveAudioOn ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />
+            {liveAudioOn ? "🔊 Suara live tersambung" : "🔊 Menyambungkan suara…"}
+          </div>
         )}
 
         {/* HUD game kedip */}
