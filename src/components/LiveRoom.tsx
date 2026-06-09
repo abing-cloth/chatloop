@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Circle, Eraser, Eye, Glasses, Heart, Power, Smile, Sparkles, Square, SwitchCamera, VideoOff, X } from "lucide-react";
+import { Camera, Circle, Eraser, Eye, Glasses, Heart, Music, Power, Smile, Sparkles, Square, SwitchCamera, VideoOff, X } from "lucide-react";
 import { useStore } from "../lib/store";
 import { cn, fileToDataUrl } from "../lib/utils";
 import { LiveCamera, FACE_EFFECTS, type GenderMode } from "./LiveCamera";
@@ -56,6 +56,7 @@ export function LiveRoom({
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [gameScore, setGameScore] = useState(0);
   const [nama3dText, setNama3dText] = useState("");
+  const [music, setMusic] = useState<string | null>(null);
   const [bgVideo, setBgVideo] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -69,6 +70,10 @@ export function LiveRoom({
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const micRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const musicFileRef = useRef<HTMLInputElement>(null);
+  const musicMonRef = useRef<HTMLAudioElement | null>(null); // monitor (host dengar)
+  const musicMixRef = useRef<HTMLAudioElement | null>(null); // sumber utk rekaman
 
   async function pickBg(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -80,6 +85,19 @@ export function LiveRoom({
     if (f) { setBgVideo((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f); }); setBg("video"); }
     e.target.value = "";
   }
+  // 🎵 pilih musik latar (akan di-mix dgn mikrofon saat rekam)
+  function pickMusic(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) setMusic((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f); });
+    e.target.value = "";
+  }
+  // monitor musik (host mendengar saat dipilih)
+  useEffect(() => {
+    if (!music) { musicMonRef.current?.pause(); musicMonRef.current = null; return; }
+    const a = new Audio(music); a.loop = true; a.volume = 0.7; a.play().catch(() => {});
+    musicMonRef.current = a;
+    return () => { a.pause(); };
+  }, [music]);
 
   // unduh blob -> tersimpan ke Galeri/Unduhan perangkat
   function download(blob: Blob, ext: string) {
@@ -101,31 +119,59 @@ export function LiveRoom({
     setFlash(true); setTimeout(() => setFlash(false), 180);
   }
 
-  // ⏺ rekam video (canvas + filter + SUARA mikrofon) -> WebM
+  // ⏺ rekam video (canvas + filter) dgn MIXER AUDIO: mikrofon + musik -> WebM
   async function toggleRecord() {
     if (recording) { recRef.current?.stop(); return; }
     const src = liveCanvasRef.current; if (!src || !src.captureStream) return;
     try {
       const stream = src.captureStream(30);
-      // gabungkan suara mikrofon (jika diizinkan)
-      try {
-        const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-        micRef.current = mic;
-        mic.getAudioTracks().forEach((t) => stream.addTrack(t));
-      } catch { /* tetap rekam tanpa mic jika ditolak */ }
+      // === mixer audio (Web Audio): gabung mic + musik jadi SATU track ===
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      let mixed = false;
+      if (Ctx) {
+        const ac = new Ctx(); audioCtxRef.current = ac;
+        const dest = ac.createMediaStreamDestination();
+        // suara mikrofon
+        try {
+          const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+          micRef.current = mic;
+          const mg = ac.createGain(); mg.gain.value = 1.0;
+          ac.createMediaStreamSource(mic).connect(mg).connect(dest); mixed = true;
+        } catch { /* tanpa mic */ }
+        // musik (elemen khusus rekaman -> ke mix saja, tak ganda di speaker)
+        if (music) {
+          try {
+            const mEl = new Audio(music); mEl.loop = true; await mEl.play().catch(() => {});
+            musicMixRef.current = mEl;
+            const g = ac.createGain(); g.gain.value = 0.7;
+            ac.createMediaElementSource(mEl).connect(g).connect(dest); mixed = true;
+          } catch { /* */ }
+        }
+        if (mixed) dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+      } else {
+        // fallback: mic langsung
+        try { const mic = await navigator.mediaDevices.getUserMedia({ audio: true }); micRef.current = mic; mic.getAudioTracks().forEach((t) => stream.addTrack(t)); } catch { /* */ }
+      }
       const mime = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
-      const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000, audioBitsPerSecond: 128_000 });
+      const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000, audioBitsPerSecond: 192_000 });
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         download(new Blob(chunksRef.current, { type: "video/webm" }), "webm");
         micRef.current?.getTracks().forEach((t) => t.stop()); micRef.current = null;
+        musicMixRef.current?.pause(); musicMixRef.current = null;
+        audioCtxRef.current?.close().catch(() => {}); audioCtxRef.current = null;
         setRecording(false);
       };
       mr.start(); recRef.current = mr; setRecording(true);
     } catch { /* perangkat tak mendukung */ }
   }
-  useEffect(() => () => { const mr = recRef.current; try { if (mr && mr.state === "recording") mr.stop(); } catch { /* */ } micRef.current?.getTracks().forEach((t) => t.stop()); }, []);
+  useEffect(() => () => {
+    const mr = recRef.current; try { if (mr && mr.state === "recording") mr.stop(); } catch { /* */ }
+    micRef.current?.getTracks().forEach((t) => t.stop());
+    musicMonRef.current?.pause(); musicMixRef.current?.pause();
+    audioCtxRef.current?.close().catch(() => {});
+  }, []);
 
   const fltDef = filterByKey(filter);
   const filterCss = fltDef.filterCss ?? "none";
@@ -279,6 +325,10 @@ export function LiveRoom({
             <button onClick={toggleRecord} title={recording ? "Stop rekam" : "Rekam video"} className={cn("absolute right-3 top-64 grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95", recording ? "bg-red-600 animate-pulse" : "bg-black/40 hover:bg-black/60")}>
               {recording ? <Square size={16} className="fill-white" /> : <Circle size={20} className="fill-red-500 text-red-500" />}
             </button>
+            <button onClick={() => (music ? setMusic((p) => { if (p) URL.revokeObjectURL(p); return null; }) : musicFileRef.current?.click())} title={music ? "Matikan musik" : "Musik latar (mix dgn mic)"} className={cn("absolute right-3 top-[19rem] grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95", music ? "bg-fuchsia-500" : "bg-black/40 hover:bg-black/60")}>
+              <Music size={18} />
+            </button>
+            <input ref={musicFileRef} type="file" accept="audio/*" hidden onChange={pickMusic} />
           </>
         )}
         {/* kilat saat ambil foto */}
