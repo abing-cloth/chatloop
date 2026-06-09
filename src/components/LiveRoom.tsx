@@ -55,6 +55,7 @@ export function LiveRoom({
   const [camError, setCamError] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [gameScore, setGameScore] = useState(0);
+  const [nama3dText, setNama3dText] = useState("");
   const [bgVideo, setBgVideo] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -207,7 +208,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} topengText={me.name.split(" ")[0]} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} topengText={nama3dText.trim() || me.name.split(" ")[0]} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -348,6 +349,15 @@ export function LiveRoom({
                   <button key={cc} onClick={() => setCat(cc)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", cat === cc ? "bg-white text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>{cc}</button>
                 ))}
               </div>
+            )}
+            {efekTab === "wajah" && ar === "nama3d" && (
+              <input
+                value={nama3dText}
+                onChange={(e) => setNama3dText(e.target.value)}
+                maxLength={16}
+                placeholder={`Ketik nama untuk Nama 3D (mis. ${me.name.split(" ")[0]})`}
+                className="mb-2 w-full rounded-full bg-white/15 px-4 py-2 text-sm text-white outline-none backdrop-blur placeholder:text-white/50 focus:bg-white/25"
+              />
             )}
             <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {efekTab === "filter"

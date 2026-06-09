@@ -42,6 +42,9 @@ export const FACE_EFFECTS: { key: string; label: string; icon: string; group: st
   { key: "mask3d", label: "Visor 3D", icon: "🤖", group: "Topeng 3D" },
   // Text / Typografi 3D (kategori 11)
   { key: "nama3d", label: "Nama 3D", icon: "🪧", group: "Teks 3D" },
+  // Karakter 3D dari file .glb (GLTFLoader)
+  { key: "glbduck", label: "Bebek 3D", icon: "🦆", group: "Karakter 3D" },
+  { key: "glbfox", label: "Rubah 3D", icon: "🦊", group: "Karakter 3D" },
 ];
 
 // Particle: set emoji per jenis (kategori 8). hati = naik dari bawah, lainnya jatuh.

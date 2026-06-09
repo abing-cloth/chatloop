@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../lib/store";
 import type { Settings as SettingsType } from "../lib/store";
-import { cn } from "../lib/utils";
+import { asset, cn } from "../lib/utils";
 import { InstallButton } from "../components/InstallButton";
 import { biometricAvailable, registerBiometric } from "../lib/biometric";
 import { useT } from "../lib/i18n";
@@ -180,6 +180,14 @@ export function Settings() {
             tampil layar penuh, dan bisa dipakai offline.
           </p>
           <InstallButton className="w-full" />
+          <a
+            href={asset("suuchat.apk")}
+            download="SUUCHAT.apk"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            <Download size={16} /> Unduh APK Android
+          </a>
+          <p className="mt-1.5 px-1 text-[11px] text-zinc-400">Untuk HP Android: pasang langsung dari file APK (izinkan instal dari sumber ini).</p>
         </div>
       </Section>
 

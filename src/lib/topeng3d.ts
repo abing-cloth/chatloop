@@ -2,8 +2,32 @@
 // BERPUTAR mengikuti pose kepala (orientasi dari basis 3D landmark x/y/z).
 // Lazy-load three (chunk terpisah). NO-OP sampai three termuat.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { asset } from "./utils";
 
 type XYZ = { x: number; y: number; z?: number };
+
+// ── Model .glb (karakter/hewan) via GLTFLoader, di-normalisasi & di-cache ──
+const glbCache: Record<string, any> = {};
+const glbLoading = new Set<string>();
+const GLB: Record<string, string> = { glbduck: "duck", glbfox: "fox" };
+async function loadGlb(url: string) {
+  if (glbCache[url] || glbLoading.has(url) || !THREE) return;
+  glbLoading.add(url);
+  try {
+    const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
+    const gltf: any = await new GLTFLoader().loadAsync(url);
+    const scene = gltf.scene;
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const center = new THREE.Vector3(); box.getCenter(center);
+    const norm = 1.6 / (Math.max(size.x, size.y, size.z) || 1);
+    scene.scale.setScalar(norm);
+    scene.position.copy(center).multiplyScalar(-norm);
+    const wrap = new THREE.Group(); wrap.add(scene);
+    glbCache[url] = wrap;
+  } catch { /* gagal load model */ }
+  glbLoading.delete(url);
+}
 
 let THREE: any = null;
 let renderer: any, scene: any, camera: any, group: any;
@@ -126,7 +150,7 @@ function build(kind: string, text?: string): any {
   return buildMask();
 }
 
-export const TOPENG_3D = ["glasses3d", "crown3d", "dog3d", "mask3d", "nama3d"];
+export const TOPENG_3D = ["glasses3d", "crown3d", "dog3d", "mask3d", "nama3d", "glbduck", "glbfox"];
 
 /** Render topeng 3D utk semua wajah -> kembalikan kanvas WebGL (atau null jika belum siap). */
 export function topeng3dRender(faces: XYZ[][], W: number, H: number, kind: string, text?: string): HTMLCanvasElement | null {
@@ -136,6 +160,29 @@ export function topeng3dRender(faces: XYZ[][], W: number, H: number, kind: strin
     camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2; camera.updateProjectionMatrix();
     while (group.children.length) group.remove(group.children[group.children.length - 1]);
     const wv = (p: XYZ) => new THREE.Vector3((p.x - 0.5) * W, -(p.y - 0.5) * H, -(p.z || 0) * W);
+    // model .glb (karakter) — tampil di wajah pertama, bertengger di atas kepala
+    if (GLB[kind]) {
+      const url = asset("models/" + GLB[kind] + ".glb");
+      const w = glbCache[url];
+      const f = faces[0];
+      if (!w) loadGlb(url);
+      else if (f && f.length >= 468) {
+        const L = wv(f[33]), R = wv(f[263]), T = wv(f[10]), B = wv(f[152]);
+        const ex = R.clone().sub(L); const inter = ex.length();
+        if (inter >= 1) {
+          ex.normalize();
+          const ey0 = T.clone().sub(B).normalize();
+          const ez = ex.clone().cross(ey0).normalize();
+          const ey = ez.clone().cross(ex).normalize();
+          w.scale.setScalar(inter);
+          w.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, ez));
+          w.position.copy(T).add(ey.clone().multiplyScalar(inter * 0.95));
+          group.add(w);
+        }
+      }
+      renderer.render(scene, camera);
+      return renderer.domElement;
+    }
     for (const f of faces) {
       if (!f || f.length < 468) continue;
       const L = wv(f[33]), R = wv(f[263]), T = wv(f[10]), B = wv(f[152]);

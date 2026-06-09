@@ -44,7 +44,7 @@ import {
 } from "./seed";
 
 import { supabaseEnabled } from "./supabase";
-import { mirrorPost, mirrorLive, endLiveRemote } from "./sync";
+import { mirrorPost, mirrorLive, endLiveRemote, mirrorMessage } from "./sync";
 
 let counter = 0;
 const uid = (prefix: string) => `${prefix}_${Date.now().toString(36)}_${counter++}`;
@@ -576,7 +576,8 @@ export const useStore = create<State>()(
           return n + (p ? p.price * c.qty : 0);
         }, 0),
 
-      sendMessage: (userId, text, opts) =>
+      sendMessage: (userId, text, opts) => {
+        const from = get().currentUserId;
         set((s) => {
           const msg = {
             id: uid("m"),
@@ -600,7 +601,9 @@ export const useStore = create<State>()(
                 )
               : [{ userId, messages: [msg] }, ...s.conversations],
           };
-        }),
+        });
+        mirrorMessage(from, userId, text.trim(), opts); // ke backend (no-op bila offline)
+      },
 
       createGroupChat: (name, memberIds) =>
         set((s) => ({

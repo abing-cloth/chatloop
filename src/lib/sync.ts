@@ -72,8 +72,37 @@ export async function initSync(store: AnyStore) {
         store.setState((s: any) => ({ liveStreams: s.liveStreams.filter((x: any) => x.id !== p.new.id) }));
       })
       .subscribe();
+
+    // ── PESAN/DM: muat awal + langganan realtime ──
+    const { data: msgs } = await sb.from("messages").select("*").or(`from_id.eq.${uid},to_id.eq.${uid}`).order("created_at", { ascending: true }).limit(500);
+    if (msgs?.length) {
+      const convMap: Record<string, any[]> = {};
+      for (const m of msgs) { const other = m.from_id === uid ? m.to_id : m.from_id; (convMap[other] ??= []).push(rowToMsg(m)); }
+      store.setState((s: any) => {
+        const convs = [...s.conversations];
+        for (const [other, list] of Object.entries(convMap)) {
+          const i = convs.findIndex((c) => c.userId === other);
+          if (i >= 0) convs[i] = { ...convs[i], messages: list }; else convs.unshift({ userId: other, messages: list });
+        }
+        return { conversations: convs };
+      });
+    }
+    sb.channel("rt-msgs")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `to_id=eq.${uid}` }, (p: any) => {
+        const m = p.new, other = m.from_id, msg = rowToMsg(m);
+        store.setState((s: any) => {
+          const convs = [...s.conversations];
+          const i = convs.findIndex((c) => c.userId === other);
+          if (i >= 0) { if (convs[i].messages.some((x: any) => x.id === msg.id)) return {}; convs[i] = { ...convs[i], messages: [...convs[i].messages, msg] }; }
+          else convs.unshift({ userId: other, messages: [msg] });
+          return { conversations: convs };
+        });
+      })
+      .subscribe();
   } catch { started = false; /* gagal -> tetap lokal, boleh coba lagi */ }
 }
+
+const rowToMsg = (m: any) => ({ id: m.id, fromId: m.from_id, text: m.text || "", image: m.image || undefined, audio: m.audio || undefined, duration: m.duration || undefined, createdAt: Date.parse(m.created_at) || Date.now(), read: true });
 
 /** Kirim postingan baru ke backend (echo realtime ke semua pengguna). */
 export async function mirrorPost(post: any) {
@@ -99,5 +128,14 @@ export async function endLiveRemote(id: string) {
   try {
     const sb = await getSupabase(); if (!sb) return;
     await sb.from("lives").update({ active: false }).eq("id", id);
+  } catch { /* */ }
+}
+
+/** Kirim pesan/DM ke backend (penerima dapat via realtime). */
+export async function mirrorMessage(fromId: string, toId: string, text: string, opts?: { image?: string; audio?: string; duration?: number }) {
+  if (!supabaseEnabled) return;
+  try {
+    const sb = await getSupabase(); if (!sb) return;
+    await sb.from("messages").insert({ from_id: fromId, to_id: toId, text: text || "", image: opts?.image ?? null, audio: opts?.audio ?? null, duration: opts?.duration ?? null });
   } catch { /* */ }
 }
