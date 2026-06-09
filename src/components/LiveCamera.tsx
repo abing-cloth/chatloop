@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker, ImageSegmenter } from "@mediapipe/tasks-vision";
 import { getFaceLandmarker } from "../lib/faceLandmarker";
-import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyGlow, reshapeFace, needsReshape, smoothInto, tintStrength, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
+import { getSelfieSegmenter, fillMaskCanvas, applyBodySkin, applyBackground, applyMakeup, applyAge, applyBeard, applyGlow, reshapeFace, needsReshape, smoothInto, tintStrength, type MakeupCfg, type ReshapeParams } from "../lib/faceFx";
 import { loadGender, detectGender } from "../lib/genderDetect";
 import { applyLUT } from "../lib/lut";
 import { topeng3dRender, TOPENG_3D } from "../lib/topeng3d";
@@ -88,6 +88,9 @@ export function LiveCamera({
   bgImage,
   bgVideo,
   lut,
+  age = 0,
+  beard = 0,
+  beardColor = "#3a3027",
   topengText,
   effect,
   facing,
@@ -103,6 +106,9 @@ export function LiveCamera({
   bgImage?: string | null; // dataURL latar custom (mode image)
   bgVideo?: string | null; // objectURL video latar (mode video)
   lut?: string | null; // color grading LUT (nama dari lib/lut.ts)
+  age?: number; // transformasi tua (kerut)
+  beard?: number; // jenggot/kumis
+  beardColor?: string;
   topengText?: string; // teks utk Nama 3D
   onScore?: (n: number) => void; // skor game kedip
   onCanvasReady?: (c: HTMLCanvasElement) => void; // ekspos kanvas utk capture
@@ -154,6 +160,9 @@ export function LiveCamera({
   const smoothRef = useRef<Pt[][]>([]); // landmark ter-smoothing (anti-jitter)
   const particlesRef = useRef<Particle[]>([]);
   const lutRef = useRef(lut);
+  const ageRef = useRef(age); ageRef.current = age;
+  const beardRef = useRef(beard); beardRef.current = beard;
+  const beardColorRef = useRef(beardColor); beardColorRef.current = beardColor;
   const topengTextRef = useRef(topengText);
   topengTextRef.current = topengText;
   const scoreRef = useRef(0);
@@ -461,7 +470,7 @@ export function LiveCamera({
         slim: cheekRef.current < 1 ? (1 - cheekRef.current) * 1.4 * fem * I : 0,
         vline: cheekRef.current < 1 ? (1 - cheekRef.current) * 0.9 * fem * I : 0,
       };
-      const beauty = effWhite > 0 || effMakeup != null || needsReshape(rp);
+      const beauty = effWhite > 0 || effMakeup != null || needsReshape(rp) || ageRef.current > 0 || beardRef.current > 0;
       const needFaces = effRef.current !== "none" || beauty;
       const lm = lmRef.current;
       if (needFaces && lm) {
@@ -489,6 +498,8 @@ export function LiveCamera({
           const g = geoOf(face, W, H);
           if (effWhite > 0) blendSkin(g, W, H, effWhite, tintRef.current);
           if (effMakeup) applyMakeup(ctx, face as unknown as { x: number; y: number }[], W, H, effMakeup, g.faceW);
+          if (beardRef.current > 0) applyBeard(ctx, face as unknown as { x: number; y: number }[], W, H, beardColorRef.current, Math.min(1, beardRef.current * I));
+          if (ageRef.current > 0) applyAge(ctx, face as unknown as { x: number; y: number }[], W, H, Math.min(1, ageRef.current * I));
         }
         // 2) mesh-warp reshape (slim/V-line, mata, hidung, bibir)
         if (faces.length && needsReshape(rp)) {

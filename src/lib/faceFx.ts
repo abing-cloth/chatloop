@@ -38,6 +38,9 @@ export interface BeautyFx {
   glow?: number;   // bloom cahaya dreamy (0-1)
   vignette?: number; // gelap di tepi (0-1)
   lut?: string;    // color grading LUT (nama dari lib/lut.ts) — grade sinematik
+  age?: number;    // transformasi tua: kerut wajah (0-1)
+  beard?: number;  // jenggot/kumis (0-1)
+  beardColor?: string; // warna jenggot
 }
 
 interface MPMask { width: number; height: number; getAsFloat32Array(): Float32Array; close?: () => void }
@@ -272,6 +275,50 @@ export function applyMakeup(ctx: CanvasRenderingContext2D, lm: XY[], W: number, 
   ctx.restore();
 }
 
+/** Transformasi TUA: garis kerut halus (dahi, kerutan mata, nasolabial, kantung mata, glabella). */
+export function applyAge(ctx: CanvasRenderingContext2D, lm: XY[], W: number, H: number, s: number) {
+  const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
+  const fw = Math.hypot(P(234).x - P(454).x, P(234).y - P(454).y) || 120;
+  const a = Math.min(0.4, 0.3 * s);
+  ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = `rgba(80,55,45,${a})`; ctx.lineWidth = Math.max(1, fw * 0.006);
+  const poly = (idx: number[], dy = 0) => { ctx.beginPath(); idx.forEach((i, k) => { const p = P(i); (k ? ctx.lineTo : ctx.moveTo).call(ctx, p.x, p.y + dy); }); ctx.stroke(); };
+  // dahi (3 garis horizontal)
+  const fore = [54, 103, 67, 109, 10, 338, 297, 332, 284];
+  for (const off of [0, 0.05, 0.1]) poly(fore, fw * off);
+  // glabella (2 garis vertikal antar-alis)
+  const g8 = P(8);
+  ctx.beginPath(); ctx.moveTo(g8.x - fw * 0.02, g8.y - fw * 0.02); ctx.lineTo(g8.x - fw * 0.02, g8.y + fw * 0.06);
+  ctx.moveTo(g8.x + fw * 0.02, g8.y - fw * 0.02); ctx.lineTo(g8.x + fw * 0.02, g8.y + fw * 0.06); ctx.stroke();
+  // kerutan sudut mata (crow's feet)
+  for (const e of [33, 263]) { const p = P(e), dir = e === 33 ? -1 : 1; for (const k of [-0.04, 0, 0.04]) { ctx.beginPath(); ctx.moveTo(p.x, p.y + fw * k); ctx.lineTo(p.x + dir * fw * 0.1, p.y + fw * k * 1.4); ctx.stroke(); } }
+  // nasolabial (lipatan hidung -> sudut mulut)
+  ctx.beginPath(); ctx.moveTo(P(129).x, P(129).y); ctx.quadraticCurveTo(P(129).x - fw * 0.04, P(61).y - fw * 0.02, P(61).x, P(61).y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(P(358).x, P(358).y); ctx.quadraticCurveTo(P(358).x + fw * 0.04, P(291).y - fw * 0.02, P(291).x, P(291).y); ctx.stroke();
+  // kantung bawah mata
+  ctx.strokeStyle = `rgba(80,55,45,${a * 0.7})`;
+  for (const [io, oo] of [[133, 33], [362, 263]]) { const i = P(io), o = P(oo); ctx.beginPath(); ctx.moveTo(i.x, i.y + fw * 0.05); ctx.quadraticCurveTo((i.x + o.x) / 2, (i.y + o.y) / 2 + fw * 0.08, o.x, o.y + fw * 0.05); ctx.stroke(); }
+  ctx.restore();
+}
+
+/** Jenggot/kumis: isi area rahang+dagu & strip kumis dgn warna translucent. */
+export function applyBeard(ctx: CanvasRenderingContext2D, lm: XY[], W: number, H: number, color: string, density: number) {
+  const P = (i: number) => ({ x: lm[i].x * W, y: lm[i].y * H });
+  const fw = Math.hypot(P(234).x - P(454).x, P(234).y - P(454).y) || 120;
+  ctx.save();
+  ctx.fillStyle = hexA(color, Math.min(0.62, 0.55 * density));
+  // jenggot rahang+dagu (kontur rahang -> sudut mulut), sisakan area mulut
+  const jaw = [132, 58, 172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288, 361, 291, 17, 61];
+  ctx.beginPath(); jaw.forEach((i, k) => { const p = P(i); (k ? ctx.lineTo : ctx.moveTo).call(ctx, p.x, p.y); }); ctx.closePath(); ctx.fill();
+  // kumis (strip di atas bibir atas)
+  const up = [61, 40, 37, 0, 267, 270, 291];
+  ctx.beginPath();
+  up.forEach((i, k) => { const p = P(i); (k ? ctx.lineTo : ctx.moveTo).call(ctx, p.x, p.y); });
+  for (let k = up.length - 1; k >= 0; k--) { const p = P(up[k]); ctx.lineTo(p.x, p.y - fw * 0.06); }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
 /** Glow/finishing: bloom (sorot highlight dilembutkan) + vignette. Dipakai di akhir. */
 export function applyGlow(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, W: number, H: number, buf: HTMLCanvasElement, strength: number, vignette: number) {
   if (strength > 0) {
@@ -373,6 +420,8 @@ export function renderBeauty(
     const g = geoOf(lm, W, H);
     if (fx.white > 0) blendSkin(ctx, source, g, W, H, fx.white, fx.tint, buf, fbuf);
     if (fx.makeup) applyMakeup(ctx, lm, W, H, fx.makeup, g.faceW);
+    if (fx.beard) applyBeard(ctx, lm, W, H, fx.beardColor ?? "#3a3027", fx.beard);
+    if (fx.age) applyAge(ctx, lm, W, H, fx.age);
   }
   // ubah fisik: mesh-warp halus (slim/V-line, mata, hidung, bibir) — tanpa artefak lingkaran
   const rp: ReshapeParams = {

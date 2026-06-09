@@ -8,7 +8,34 @@ export interface FilterDef extends BeautyFx {
   category: string;  // salah satu FILTER_CATEGORIES
 }
 
-export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro", "Seni", "Sinema"] as const;
+export const FILTER_CATEGORIES = ["Beauty", "Viral", "Estetik", "Retro", "Seni", "Sinema", "Cewek", "Cowok", "Nenek", "Kakek"] as const;
+
+// ── Transformasi wajah (10 varian / tipe). Stilisasi via beauty/age/beard, bukan face-swap. ──
+const CEWEK_LIPS = ["#e0354f", "#ff5d86", "#d9637a", "#ff6f9a", "#cf8a86", "#e06a82", "#ff5d7a", "#d94f6e", "#e07a86", "#ff4f8b"];
+const CEWEK: FilterDef[] = Array.from({ length: 10 }, (_, k) => ({
+  key: `cewek${k + 1}`, label: `Cewek Cantik ${k + 1}`, category: "Cewek",
+  filterCss: `saturate(${(1.12 + 0.02 * k).toFixed(2)}) brightness(${(1.03 + 0.004 * k).toFixed(3)})`,
+  white: 0.2, tint: "#fff5f2", body: 0.14, eye: +(1.16 + 0.012 * k).toFixed(3), lip: 1.1, cheek: 0.93, nose: 0.92, glow: 0.22, vignette: 0.06,
+  makeup: { lip: CEWEK_LIPS[k], lipA: 0.4, blush: "#ff8fb0", blushA: 0.24, shadow: "#ffc0dd", shadowA: 0.22, liner: true, brow: 0.18 },
+}));
+const COWOK: FilterDef[] = Array.from({ length: 10 }, (_, k) => ({
+  key: `cowok${k + 1}`, label: `Cowok Tampan ${k + 1}`, category: "Cowok",
+  filterCss: `saturate(${(1.05 + 0.02 * k).toFixed(2)}) contrast(${(1.08 + 0.02 * k).toFixed(2)}) brightness(1.02)`,
+  white: 0.12, tint: "#f3ede6", eye: 1, lip: 1, cheek: 0.98, glow: 0.08,
+  beard: k % 2 ? +(0.22 + 0.03 * k).toFixed(2) : 0, beardColor: "#2e261f",
+}));
+const NENEK: FilterDef[] = Array.from({ length: 10 }, (_, k) => ({
+  key: `nenek${k + 1}`, label: `Nenek ${k + 1}`, category: "Nenek",
+  filterCss: `saturate(${(0.72 - 0.02 * k).toFixed(2)}) sepia(${(0.12 + 0.02 * k).toFixed(2)}) contrast(0.95) brightness(${(1.02 + 0.005 * k).toFixed(3)})`,
+  white: 0.1, tint: "#efe6df", eye: 1, lip: 1, age: +(0.5 + 0.045 * k).toFixed(3),
+  makeup: k % 3 === 0 ? { lip: "#b08a86", lipA: 0.16 } : undefined,
+}));
+const KAKEK: FilterDef[] = Array.from({ length: 10 }, (_, k) => ({
+  key: `kakek${k + 1}`, label: `Kakek ${k + 1}`, category: "Kakek",
+  filterCss: `saturate(${(0.74 - 0.02 * k).toFixed(2)}) sepia(${(0.1 + 0.015 * k).toFixed(2)}) contrast(0.96)`,
+  white: 0.06, tint: "#ece4dc", eye: 1, lip: 1, age: +(0.5 + 0.045 * k).toFixed(3),
+  beard: +(0.45 + 0.04 * k).toFixed(2), beardColor: k < 3 ? "#6b655c" : k < 6 ? "#8a847c" : "#bdb7af",
+}));
 
 /*
   ┌─ TEMPLATE FILTER (salin & ubah) ───────────────────────────────┐
@@ -77,6 +104,9 @@ export const FILTERS: FilterDef[] = [
   { key: "dingin", label: "Dingin", category: "Sinema", filterCss: "none", white: 0.12, tint: "#f2f7ff", body: 0.1, eye: 1.06, lip: 1.03, glow: 0.1, vignette: 0.1, lut: "dingin" },
   { key: "panas", label: "Golden Hour", category: "Sinema", filterCss: "none", white: 0.14, tint: "#fff3e6", body: 0.1, eye: 1.06, lip: 1.04, cheek: 0.98, glow: 0.16, vignette: 0.08, lut: "panas" },
   { key: "drama", label: "Drama", category: "Sinema", filterCss: "none", white: 0.1, tint: "#ffffff", eye: 1.04, lip: 1.02, glow: 0.08, vignette: 0.22, lut: "drama" },
+
+  // ── Transformasi wajah (40 preset) ──
+  ...CEWEK, ...COWOK, ...NENEK, ...KAKEK,
 ];
 
 export const filterByKey = (key: string) => FILTERS.find((f) => f.key === key) ?? FILTERS[0];

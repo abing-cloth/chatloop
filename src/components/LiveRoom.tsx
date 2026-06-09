@@ -57,6 +57,7 @@ export function LiveRoom({
   const [gameScore, setGameScore] = useState(0);
   const [nama3dText, setNama3dText] = useState("");
   const [music, setMusic] = useState<string | null>(null);
+  const [voice, setVoice] = useState("none");
   const [bgVideo, setBgVideo] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -119,6 +120,29 @@ export function LiveRoom({
     setFlash(true); setTimeout(() => setFlash(false), 180);
   }
 
+  // efek suara (voice changer) pada sinyal mic -> kembalikan node output
+  function voiceChain(ac: AudioContext, src: AudioNode, kind: string): AudioNode {
+    if (kind === "robot" || kind === "alien") {
+      const osc = ac.createOscillator(); osc.type = kind === "alien" ? "sine" : "square"; osc.frequency.value = kind === "alien" ? 180 : 50;
+      const rm = ac.createGain(); rm.gain.value = 0; osc.connect(rm.gain); osc.start();
+      src.connect(rm); return rm;
+    }
+    if (kind === "echo") {
+      const mix = ac.createGain(); src.connect(mix);
+      const dly = ac.createDelay(1); dly.delayTime.value = 0.28; const fb = ac.createGain(); fb.gain.value = 0.45;
+      src.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(mix); return mix;
+    }
+    if (kind === "telepon") {
+      const bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1500; bp.Q.value = 1.2; src.connect(bp); return bp;
+    }
+    if (kind === "gua") {
+      const mix = ac.createGain(); src.connect(mix);
+      for (const [d, g] of [[0.09, 0.4], [0.17, 0.3], [0.27, 0.2]] as const) { const dl = ac.createDelay(1); dl.delayTime.value = d; const gg = ac.createGain(); gg.gain.value = g; src.connect(dl); dl.connect(gg); gg.connect(mix); }
+      return mix;
+    }
+    return src; // normal
+  }
+
   // ⏺ rekam video (canvas + filter) dgn MIXER AUDIO: mikrofon + musik -> WebM
   async function toggleRecord() {
     if (recording) { recRef.current?.stop(); return; }
@@ -131,12 +155,14 @@ export function LiveRoom({
       if (Ctx) {
         const ac = new Ctx(); audioCtxRef.current = ac;
         const dest = ac.createMediaStreamDestination();
-        // suara mikrofon
+        // suara mikrofon (+ voice changer)
         try {
           const mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
           micRef.current = mic;
+          const micSrc = ac.createMediaStreamSource(mic);
+          const out = voiceChain(ac, micSrc, voice);
           const mg = ac.createGain(); mg.gain.value = 1.0;
-          ac.createMediaStreamSource(mic).connect(mg).connect(dest); mixed = true;
+          out.connect(mg).connect(dest); mixed = true;
         } catch { /* tanpa mic */ }
         // musik (elemen khusus rekaman -> ke mix saja, tak ganda di speaker)
         if (music) {
@@ -254,7 +280,7 @@ export function LiveRoom({
               <p className="px-8 text-center text-sm">Kamera tidak aktif / izin ditolak.<br />Siaran tetap berjalan (mode demo).</p>
             </div>
           ) : (
-            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} topengText={nama3dText.trim() || me.name.split(" ")[0]} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
+            <LiveCamera filterCss={filterCss} whiteOverlay={whiteOverlay} tint={tint} eyeScale={eyeScale} lipScale={lipScale} cheek={cheek} nose={nose} bodyStrength={bodyStrength} glow={glow} vignette={vignette} genderMode={genderMode} intensity={intensity} background={bg} bgImage={bgImage} bgVideo={bgVideo} lut={fltDef.lut} age={fltDef.age} beard={fltDef.beard} beardColor={fltDef.beardColor} topengText={nama3dText.trim() || me.name.split(" ")[0]} makeup={fltDef.makeup} effect={ar} facing={facing} onError={() => setCamError(true)} onScore={setGameScore} onCanvasReady={(c) => { liveCanvasRef.current = c; }} />
           )
         ) : (
           <img src={stream?.thumbnail} alt="" className="h-full w-full object-cover" style={{ filter: filterCss }} />
@@ -387,6 +413,13 @@ export function LiveRoom({
               <button onClick={() => bgVidFileRef.current?.click()} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", bg === "video" ? "bg-cyan-400 text-zinc-900" : "bg-white/15 text-white hover:bg-white/25")}>🎬 Video</button>
               <input ref={bgFileRef} type="file" accept="image/*" hidden onChange={pickBg} />
               <input ref={bgVidFileRef} type="file" accept="video/*" hidden onChange={pickBgVideo} />
+            </div>
+            {/* voice changer (efek suara untuk rekaman) */}
+            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <span className="shrink-0 text-[11px] text-white/80">🎙️ Suara</span>
+              {([["none", "Normal"], ["robot", "🤖 Robot"], ["echo", "🔁 Echo"], ["telepon", "📞 Telepon"], ["gua", "🕳️ Gua"], ["alien", "👽 Alien"]] as const).map(([v, l]) => (
+                <button key={v} onClick={() => setVoice(v)} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur transition", voice === v ? "bg-fuchsia-500 text-white" : "bg-white/15 text-white hover:bg-white/25")}>{l}</button>
+              ))}
             </div>
             <div className="mb-2 flex gap-2">
               <button onClick={() => setEfekTab("filter")} className={cn("rounded-full px-3 py-1 text-xs font-semibold backdrop-blur", efekTab === "filter" ? "bg-white text-zinc-900" : "bg-white/20 text-white")}>Filter</button>
